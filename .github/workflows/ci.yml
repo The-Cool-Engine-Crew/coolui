@@ -31,4 +31,6 @@ jobs:
           haxelib dev coolui ${{ github.workspace }}
 
       - name: Typecheck
-        run: haxe -cp . -lib flixel -lib openfl -lib lime --macro "include('coolui')" -neko out.n
+        # Use JS target: FlxG.mouse / FlxG.keys exist on display targets (js/cpp/hl).
+        # neko lacks them because it has no display frontend in Flixel 6.
+        run: haxe -cp . -lib flixel -lib openfl -lib lime --macro "include('coolui')" -js out.js
