@@ -61,7 +61,6 @@ class CoolInputText extends FlxSpriteGroup
 	public var fieldBorderThickness(default, set) : Int = 1;
 
 	// ── Internals ────────────────────────────────────────────────────────────
-	var _bg        : FlxSprite;
 	var _field     : TextField;
 	var _fmt       : TextFormat;
 
@@ -87,11 +86,6 @@ class CoolInputText extends FlxSpriteGroup
 		_textColor = (textColor != null) ? textColor : coolui.CoolUITheme.current.textPrimary;
 		_bgColor   = (bgColor   != null) ? bgColor   : coolui.CoolUITheme.current.bgPanelAlt;
 		_brdColor  = coolui.CoolUITheme.current.borderColor;
-
-		// Visual background (decorative only — the TextField sits above it in the stage)
-		_bg = new FlxSprite(0, 0);
-		_bg.makeGraphic(_w, _h, _bgColor);
-		add(_bg);
 
 		// Build the TextField
 		_fmt = new TextFormat(null, _fontSize, _textColor);
@@ -154,7 +148,6 @@ class CoolInputText extends FlxSpriteGroup
 			_field.multiline = _lines > 1;
 			_field.wordWrap  = _lines > 1;
 		}
-		if (_bg != null) _bg.makeGraphic(_w, _h, _bgColor);
 		return _lines;
 	}
 
@@ -163,7 +156,6 @@ class CoolInputText extends FlxSpriteGroup
 	{
 		_bgColor = v;
 		if (_field != null) { _field.background = true; _field.backgroundColor = v; }
-		if (_bg    != null) _bg.makeGraphic(_w, _h, v);
 		return v;
 	}
 
@@ -292,7 +284,6 @@ class CoolInputText extends FlxSpriteGroup
 		callback      = null;
 		onFocusGained = null;
 		onFocusLost   = null;
-		_bg = FlxDestroyUtil.destroy(_bg);
 		super.destroy();
 	}
 }

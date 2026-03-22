@@ -236,6 +236,15 @@ class CoolTabMenu extends FlxSpriteGroup
 		);
 	}
 
+	override private function set_cameras(v:Array<flixel.FlxCamera>):Array<flixel.FlxCamera>
+	{
+		// Propagate camera to all members so chrome and groups
+		// render on the correct camera (e.g. camHUD in editors).
+		for (m in members)
+			if (m != null) m.cameras = v;
+		return super.set_cameras(v);
+	}
+
 	override public function destroy():Void
 	{
 		if (_fadeTween != null) { _fadeTween.cancel(); _fadeTween = null; }
