@@ -35,18 +35,18 @@ import flixel.util.FlxColor;
  * Si lo usas en un SubState, pasa el grupo contenedor al constructor o llama
  * `setStateTarget(grupo)` antes de añadir al estado.
  */
+/** Estructura de datos de cada opción. Compatible con StrNameLabel de flixel-ui. */
+typedef DropDownData = { name:String, label:String }
+
+/** Cabecera del dropdown (label del botón cerrado). */
+typedef DropDownHeader = { text:String, ?style:DropDownHeaderStyle }
+typedef DropDownHeaderStyle = { ?fontSize:Int, ?color:Int }
+
 class CoolDropDown extends FlxSpriteGroup
 {
 	// ── Tipos públicos ───────────────────────────────────────────────────────
 
 	public static inline var ROW_H : Int = 18;
-
-	/** Estructura de datos de cada opción. Compatible con StrNameLabel de flixel-ui. */
-	public typedef DropDownData = { name:String, label:String }
-
-	/** Cabecera del dropdown (label del botón cerrado). */
-	public typedef DropDownHeader = { text:String, ?style:DropDownHeaderStyle }
-	public typedef DropDownHeaderStyle = { ?fontSize:Int, ?color:Int }
 
 	// ── Propiedades públicas ─────────────────────────────────────────────────
 
