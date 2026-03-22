@@ -40,10 +40,8 @@ jobs:
           -lib flixel
           -D lime
           -D openfl
-          -D cpp
           --macro include('coolui')
-          -cpp /tmp/typecheck_out
-          --no-output
+          -hl /tmp/out.hl
           HXML
 
       - name: Typecheck
