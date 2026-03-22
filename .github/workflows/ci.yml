@@ -1,0 +1,34 @@
+name: CI
+
+on:
+  push:
+    branches: [main, dev]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build:
+    name: Haxe ${{ matrix.haxe }} / ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        haxe: ["4.3.6"]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Haxe
+        uses: krdlab/setup-haxe@v1
+        with:
+          haxe-version: ${{ matrix.haxe }}
+
+      - name: Install dependencies
+        run: |
+          haxelib install lime       --quiet
+          haxelib install openfl     --quiet
+          haxelib install flixel     --quiet
+          haxelib dev coolui ${{ github.workspace }}
+
+      - name: Typecheck (no build needed — lib only)
+        run: haxe --no-output -cp . --macro include('coolui') -lib flixel -lib openfl -lib lime

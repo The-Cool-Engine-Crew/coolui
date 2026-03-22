@@ -1,0 +1,17 @@
+{
+  "name": "coolui",
+  "url": "https://github.com/The-Cool-Engine-Crew/coolui",
+  "license": "MIT",
+  "tags": ["flixel", "ui", "haxe", "openfl"],
+  "description": "Native HaxeFlixel UI library — drop-in replacement for flixel-ui. No XML, no event bus, pure FlxSpriteGroup widgets with direct callbacks.",
+  "version": "1.0.0",
+  "releasenote": "Initial release",
+  "contributors": ["CoolTeam"],
+  "dependencies": {
+    "lime": "",
+    "openfl": "",
+    "flixel": ""
+  },
+  "classPath": ".",
+  "main": ""
+}
