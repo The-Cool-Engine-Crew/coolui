@@ -8,10 +8,14 @@ import flixel.util.FlxColor;
 import flixel.util.FlxDestroyUtil;
 import openfl.events.Event;
 import openfl.events.FocusEvent;
+import openfl.text.Font;
 import openfl.text.TextField;
-import openfl.text.TextFieldAutoSize;
 import openfl.text.TextFieldType;
 import openfl.text.TextFormat;
+
+// Embed VCR OSD Mono from the library's assets folder.
+@:font("../assets/vcr.ttf")
+private class _VCRFont extends Font {}
 
 /**
  * CoolInputText — Editable text input field, no flixel-ui required.
@@ -62,6 +66,7 @@ class CoolInputText extends FlxSpriteGroup
 
 	// ── Internals ────────────────────────────────────────────────────────────
 	var _field     : TextField;
+	static var _fontRegistered : Bool = false;
 	var _fmt       : TextFormat;
 
 	var _w         : Int;
@@ -88,10 +93,16 @@ class CoolInputText extends FlxSpriteGroup
 		_brdColor  = coolui.CoolUITheme.current.borderColor;
 
 		// Build the TextField
-		// Font size in game-pixels is much smaller than screen points.
-		// Multiply by 2 so the text visually matches FlxText at the same size.
-		var _screenFontSize = _fontSize * 2;
-		_fmt = new TextFormat("_sans", _screenFontSize, _textColor);
+		// Register the embedded VCR font on first use.
+		if (!_fontRegistered)
+		{
+			Font.registerFont(_VCRFont);
+			_fontRegistered = true;
+		}
+		// Scale game-pixels to screen points: game runs at 720p internal,
+		// so multiply by 1.5 to get a comfortable readable size on screen.
+		var _screenFontSize = Std.int(_fontSize * 1.5);
+		_fmt = new TextFormat("VCR OSD Mono", _screenFontSize, _textColor);
 		_field = new TextField();
 		_field.type              = TextFieldType.INPUT;
 		_field.defaultTextFormat = _fmt;
@@ -242,8 +253,8 @@ class CoolInputText extends FlxSpriteGroup
 		_field.width  = _w   * sx;
 		_field.height = _h   * sy;
 
-		// Scale font size: base is already 2× game size, then apply screen scale
-		_fmt.size = Std.int(_fontSize * 2 * sy);
+		// Scale font size: 1.5× game size then apply screen scale factor
+		_fmt.size = Std.int(_fontSize * 1.5 * sy);
 		_field.defaultTextFormat = _fmt;
 		_field.setTextFormat(_fmt);
 
