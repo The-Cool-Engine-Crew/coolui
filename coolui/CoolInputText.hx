@@ -57,8 +57,8 @@ class CoolInputText extends FlxSpriteGroup
 
 	public var lines(get, set) : Int;
 	public var backgroundColor(get, set)   : Int;
-	public var fieldBorderrColor(get, set)  : Int;
-	public var fieldBorderrThickness(default, set) : Int = 1;
+	public var fieldBorderColor(get, set)  : Int;
+	public var fieldBorderThickness(default, set) : Int = 1;
 
 	// ── Internals ────────────────────────────────────────────────────────────
 	var _bg        : FlxSprite;
@@ -167,16 +167,16 @@ class CoolInputText extends FlxSpriteGroup
 		return v;
 	}
 
-	function get_fieldBorderrColor()  return _brdColor;
-	function set_fieldBorderrColor(v:Int):Int
+	function get_fieldBorderColor()  return _brdColor;
+	function set_fieldBorderColor(v:Int):Int
 	{
 		_brdColor = v;
 		if (_field != null) { _field.border = true; _field.borderColor = v; }
 		return v;
 	}
-	function set_fieldBorderrThickness(v:Int):Int
+	function set_fieldBorderThickness(v:Int):Int
 	{
-		fieldBorderrThickness = v;
+		fieldBorderThickness = v;
 		return v;
 	}
 
