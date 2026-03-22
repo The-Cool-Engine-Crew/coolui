@@ -53,7 +53,10 @@ class CoolButton extends FlxSpriteGroup
 	var _bh      : Int;
 	var _enabled : Bool = true;
 	var _tween   : FlxTween;
-	var _hover   : Bool = false;
+	var _hover        : Bool = false;
+	var _wasPressed   : Bool = false;
+	/** True durante UN frame después de soltar el botón encima. */
+	public var justReleased : Bool = false;
 
 	// ── Constructor ──────────────────────────────────────────────────────────
 
@@ -187,10 +190,13 @@ class CoolButton extends FlxSpriteGroup
 	override public function update(elapsed:Float):Void
 	{
 		super.update(elapsed);
+		justReleased = false;
 		if (!_enabled) return;
 
 		var mx = FlxG.mouse.x; var my = FlxG.mouse.y;
 		var inBtn = mx >= x && mx <= x + _bw && my >= y && my <= y + _bh;
+		if (inBtn && _wasPressed && FlxG.mouse.justReleased) justReleased = true;
+		_wasPressed = inBtn && FlxG.mouse.pressed;
 
 		if (inBtn != _hover)
 		{

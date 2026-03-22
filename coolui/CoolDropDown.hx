@@ -56,7 +56,7 @@ class CoolDropDown extends FlxSpriteGroup
 	public var callback : String -> Void;
 
 	public var selectedLabel(get, set) : String;
-	public var selectedId(get, never)  : String;
+	public var selectedId(get, set)   : String;
 
 	// ── Internals ────────────────────────────────────────────────────────────
 
@@ -128,6 +128,30 @@ class CoolDropDown extends FlxSpriteGroup
 
 	function get_selectedId():String
 		return (_selectedIdx >= 0 && _selectedIdx < _data.length) ? _data[_selectedIdx].name : "";
+
+	function set_selectedId(v:String):String
+	{
+		for (i in 0..._data.length)
+		{
+			if (_data[i].name == v) { _selectedIdx = i; break; }
+		}
+		if (_btnLabel != null && _selectedIdx >= 0 && _selectedIdx < _data.length)
+			_btnLabel.text = _data[_selectedIdx].label;
+		return v;
+	}
+
+	/**
+	 * Reemplaza todos los items del dropdown en caliente.
+	 * Compat con FlxUIDropDownMenu (que no tenía este método pero se esperaba).
+	 */
+	public function setData(items:Array<DropDownData>):Void
+	{
+		_data = items ?? [];
+		_selectedIdx = (_data.length > 0) ? 0 : -1;
+		if (_btnLabel != null)
+			_btnLabel.text = (_selectedIdx >= 0) ? _data[_selectedIdx].label : (_header?.text ?? "");
+		_closeList();
+	}
 
 	// ── Build ────────────────────────────────────────────────────────────────
 

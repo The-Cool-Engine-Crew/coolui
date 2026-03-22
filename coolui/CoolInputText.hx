@@ -7,146 +7,127 @@ import flixel.math.FlxPoint;
 import flixel.text.FlxText;
 import flixel.util.FlxColor;
 import flixel.util.FlxDestroyUtil;
-
 import openfl.events.Event;
 import openfl.events.FocusEvent;
+import openfl.events.KeyboardEvent;
 import openfl.text.TextField;
-import openfl.text.TextFieldAutoSize;
 import openfl.text.TextFieldType;
 import openfl.text.TextFormat;
 
 /**
- * CoolInputText — Campo de texto editable nativo, sin dependencia de flixel-ui.
+ * CoolInputText — Campo de texto editable, sin dependencia de flixel-ui.
  *
- * Usa un `openfl.text.TextField` como overlay en el stage de OpenFL para la
- * captura real de teclado, igual que hacía `flixel.addons.ui.FlxInputText`.
- * La posición del overlay se sincroniza cada frame con la posición en pantalla.
+ * Drop-in para FlxUIInputText / FlxInputText.
  *
- * API compatible con FlxUIInputText:
+ * Constructor compatible con ambas APIs originales:
+ *   new CoolInputText(x, y, width, text, fontSize)
+ *   new CoolInputText(x, y, width, text, fontSize, textColor, bgColor)
  *
- *   var inp = new CoolInputText(x, y, width, "texto inicial");
- *   inp.callback = function(text:String, action:String) { trace(text); };
- *   add(inp);
- *
- * Acciones en callback: "enter", "backspace", "delete", "change"
- *
- * Notas:
- *  • scrollFactor.set(0, 0) si el input vive en un panel fijo de editor.
- *  • El TextField de OpenFL se añade a `FlxG.stage` al hacer `add()` y se
- *    retira en `destroy()`. Si lo eliminas del grupo con `remove()` llama
- *    `destroy()` explícitamente para limpiar el overlay.
- *  • `maxLength`: limita caracteres (0 = sin límite).
- *  • `passwordMode`: oculta el texto con asteriscos.
- *  • `filterMode`: ONLY_ALPHA, ONLY_NUMERIC, ONLY_ALPHANUMERIC, CUSTOM.
- *  • `customFilterPattern`: regex para CUSTOM filterMode.
+ * Propiedades extra vs FlxUIInputText:
+ *   lines                 — alto en líneas de texto
+ *   backgroundColor       — color de fondo del TextField (proxy)
+ *   fieldBorderColor      — color del borde del TextField (proxy)
+ *   fieldBorderThickness  — grosor del borde (actualmente estético)
+ *   focusGained / focusLost  — alias de onFocusGained / onFocusLost
  */
 class CoolInputText extends FlxSpriteGroup
 {
-	// ── Filtros (mismos valores que FlxInputText para compatibilidad) ────────
+	// ── Filtros ──────────────────────────────────────────────────────────────
 	public static inline var NO_FILTER         : Int = 0;
 	public static inline var ONLY_ALPHA        : Int = 1;
 	public static inline var ONLY_NUMERIC      : Int = 2;
 	public static inline var ONLY_ALPHANUMERIC : Int = 3;
 	public static inline var CUSTOM_FILTER     : Int = 4;
 
-	// ── Señales / callbacks ──────────────────────────────────────────────────
-
-	/** Llamado cuando el texto cambia: `callback(newText, action)`. */
-	public var callback   : String -> String -> Void;
-	/** Llamado cuando el campo gana el foco. */
+	// ── Callbacks ────────────────────────────────────────────────────────────
+	public var callback      : String -> String -> Void;
 	public var onFocusGained : Void -> Void;
-	/** Llamado cuando el campo pierde el foco. */
-	public var onFocusLost  : Void -> Void;
+	public var onFocusLost   : Void -> Void;
+
+	/** Alias de onFocusGained (compat DialogueEditor). */
+	public var focusGained(get, set) : Void -> Void;
+	/** Alias de onFocusLost  (compat DialogueEditor). */
+	public var focusLost(get, set)   : Void -> Void;
+
+	function get_focusGained() return onFocusGained;
+	function set_focusGained(v) { onFocusGained = v; return v; }
+	function get_focusLost()    return onFocusLost;
+	function set_focusLost(v)   { onFocusLost = v; return v; }
 
 	// ── Propiedades públicas ─────────────────────────────────────────────────
-
 	public var text(get, set)        : String;
 	public var hasFocus(get, set)    : Bool;
 	public var maxLength(get, set)   : Int;
 	public var passwordMode(get,set) : Bool;
 	public var filterMode            : Int = NO_FILTER;
-	/** Patrón regex para CUSTOM_FILTER (sin delimitadores). */
 	public var customFilterPattern   : String = "";
 
+	/** Alto del campo expresado en líneas de texto. */
+	public var lines(get, set) : Int;
+
+	/** Color de fondo del TextField interno. */
+	public var backgroundColor(get, set) : Int;
+	/** Color del borde del TextField interno. */
+	public var fieldBorderColor(get, set) : Int;
+	/** Grosor del borde (visual, no nativo OpenFL). */
+	public var fieldBorderThickness(default, set) : Int = 1;
+
 	// ── Internals ────────────────────────────────────────────────────────────
+	var _bg      : FlxSprite;
+	var _display : FlxText;
+	var _field   : TextField;
+	var _fmt     : TextFormat;
+	var _w       : Int;
+	var _h       : Int;
+	var _fontSize: Int;
+	var _lines   : Int = 1;
+	var _bgColor : Int;
+	var _brdColor: Int;
 
-	var _bg       : FlxSprite;
-	var _display  : FlxText;   // muestra el texto cuando el campo no tiene foco
-
-	/** El TextField de OpenFL que hace la edición real. */
-	var _field    : TextField;
-	/** Formato de texto aplicado al TextField. */
-	var _fmt      : TextFormat;
-
-	var _w        : Int;
-	var _h        : Int;
-	var _fontSize : Int;
-
-	var _fieldOnStage : Bool = false;
+	var _fieldOnStage  : Bool = false;
+	var _needsMount    : Bool = true;   // mount on first update
 
 	// ── Constructor ──────────────────────────────────────────────────────────
-
-	/**
-	 * @param px        Posición X
-	 * @param py        Posición Y
-	 * @param width     Ancho del campo (px)
-	 * @param text      Texto inicial
-	 * @param fontSize  Tamaño de fuente (por defecto 8)
-	 */
 	public function new(px:Float = 0, py:Float = 0, width:Int = 150,
-	                    text:String = "", fontSize:Int = 8)
+	                    text:String = "", fontSize:Int = 8,
+	                    ?textColor:Int, ?bgColor:Int)
 	{
 		super(px, py);
-		_w = (width > 0) ? width : 150;
+		_w        = (width > 0) ? width : 150;
 		_fontSize = (fontSize > 0) ? fontSize : 8;
-		_h = _fontSize + 8;
+		_h        = _fontSize + 8;
+		_bgColor  = (bgColor  != null) ? bgColor  : coolui.CoolUITheme.current.bgPanelAlt;
+		_brdColor = coolui.CoolUITheme.current.borderColor;
 
-		_buildVisuals(text);
-		_buildTextField(text);
+		var tc = (textColor != null) ? textColor : coolui.CoolUITheme.current.textPrimary;
+		_buildVisuals(text, tc);
+		_buildTextField(text, tc);
 	}
 
 	// ── Getters / Setters ────────────────────────────────────────────────────
-
 	function get_text():String
 		return (_field != null) ? _field.text : "";
-
 	function set_text(v:String):String
 	{
-		if (_field != null) _field.text = v;
-		if (_display != null) _display.text = v;
+		if (_field   != null) _field.text   = v;
+		if (_display != null) _display.text = passwordMode ? _maskText(v) : v;
 		return v;
 	}
 
 	function get_hasFocus():Bool
 		return _fieldOnStage && FlxG.stage != null && FlxG.stage.focus == _field;
-
 	function set_hasFocus(v:Bool):Bool
 	{
 		if (FlxG.stage == null) return v;
-		if (v)
-		{
-			if (!_fieldOnStage) _mountTextField();
-			FlxG.stage.focus = _field;
-		}
-		else if (FlxG.stage.focus == _field)
-		{
-			FlxG.stage.focus = null;
-		}
+		if (v) { if (!_fieldOnStage) _mountTextField(); FlxG.stage.focus = _field; }
+		else if (FlxG.stage.focus == _field) FlxG.stage.focus = null;
 		return v;
 	}
 
-	function get_maxLength():Int
-		return (_field != null) ? _field.maxChars : 0;
+	function get_maxLength():Int   return (_field != null) ? _field.maxChars : 0;
+	function set_maxLength(v:Int):Int { if (_field != null) _field.maxChars = v; return v; }
 
-	function set_maxLength(v:Int):Int
-	{
-		if (_field != null) _field.maxChars = v;
-		return v;
-	}
-
-	function get_passwordMode():Bool
-		return (_field != null) ? _field.displayAsPassword : false;
-
+	function get_passwordMode():Bool return (_field != null) ? _field.displayAsPassword : false;
 	function set_passwordMode(v:Bool):Bool
 	{
 		if (_field != null) _field.displayAsPassword = v;
@@ -154,93 +135,89 @@ class CoolInputText extends FlxSpriteGroup
 		return v;
 	}
 
-	// ── Construcción visual ──────────────────────────────────────────────────
-
-	function _buildVisuals(initialText:String):Void
+	function get_lines():Int return _lines;
+	function set_lines(v:Int):Int
 	{
-		var T = coolui.CoolUITheme.current;
+		_lines = (v > 0) ? v : 1;
+		_h = _lines * (_fontSize + 4) + 4;
+		if (_field   != null) { _field.height = _h; _field.multiline = _lines > 1; _field.wordWrap = _lines > 1; }
+		if (_bg      != null) _bg.makeGraphic(_w, _h, _bgColor);
+		if (_display != null) { _display.fieldHeight = _h - 4; }
+		return _lines;
+	}
 
-		// Fondo
+	function get_backgroundColor():Int return _bgColor;
+	function set_backgroundColor(v:Int):Int
+	{
+		_bgColor = v;
+		if (_field != null) { _field.background = true; _field.backgroundColor = v; }
+		if (_bg    != null) _bg.makeGraphic(_w, _h, v);
+		return v;
+	}
+
+	function get_fieldBorderColor():Int return _brdColor;
+	function set_fieldBorderColor(v:Int):Int
+	{
+		_brdColor = v;
+		if (_field != null) { _field.border = true; _field.borderColor = v; }
+		return v;
+	}
+	function set_fieldBorderThickness(v:Int):Int
+	{
+		fieldBorderThickness = v;
+		// OpenFL TextField only supports 1px native border; thicker borders are visual-only.
+		// Redraw the bg sprite border on next build if needed.
+		return v;
+	}
+
+	// ── Build ────────────────────────────────────────────────────────────────
+	function _buildVisuals(initialText:String, tc:Int):Void
+	{
 		_bg = new FlxSprite(0, 0);
-		_bg.makeGraphic(_w, _h, T.bgPanelAlt);
+		_bg.makeGraphic(_w, _h, _bgColor);
 		add(_bg);
 
-		// Borde
-		var border = new FlxSprite(0, 0);
-		border.makeGraphic(_w, _h, FlxColor.TRANSPARENT);
-		// Marco de 1px dibujado manualmente
-		_drawBorder(border, T.borderColor);
-		add(border);
-
-		// Texto de display (visible cuando no hay foco)
 		_display = new FlxText(3, 2, _w - 6, initialText, _fontSize);
-		_display.color = FlxColor.fromInt(T.textPrimary);
+		_display.color = FlxColor.fromInt(tc);
 		_display.scrollFactor.set();
 		add(_display);
 	}
 
-	function _buildTextField(initialText:String):Void
+	function _buildTextField(initialText:String, tc:Int):Void
 	{
-		var T = coolui.CoolUITheme.current;
-
-		_fmt = new TextFormat(null, _fontSize, T.textPrimary);
-
+		_fmt = new TextFormat(null, _fontSize, tc);
 		_field = new TextField();
 		_field.type          = TextFieldType.INPUT;
 		_field.defaultTextFormat = _fmt;
 		_field.background    = true;
-		_field.backgroundColor = T.bgPanelAlt;
+		_field.backgroundColor = _bgColor;
 		_field.border        = true;
-		_field.borderColor   = T.borderColor;
-		_field.textColor     = T.textPrimary;
+		_field.borderColor   = _brdColor;
+		_field.textColor     = tc;
 		_field.width         = _w;
 		_field.height        = _h;
 		_field.text          = initialText;
-		_field.visible       = false; // se muestra solo al ganar foco
+		_field.visible       = false;
 
-		_field.addEventListener(Event.CHANGE,          _onChange);
-		_field.addEventListener(FocusEvent.FOCUS_IN,   _onFocusIn);
-		_field.addEventListener(FocusEvent.FOCUS_OUT,  _onFocusOut);
+		_field.addEventListener(Event.CHANGE,         _onChange);
+		_field.addEventListener(FocusEvent.FOCUS_IN,  _onFocusIn);
+		_field.addEventListener(FocusEvent.FOCUS_OUT, _onFocusOut);
 	}
 
-	function _drawBorder(s:FlxSprite, color:Int):Void
-	{
-		// Dibuja 4 líneas de 1px alrededor del sprite
-		s.makeGraphic(_w, _h, FlxColor.TRANSPARENT);
-		var pixels = s.pixels;
-		var c = FlxColor.fromInt(color);
-		c.alphaFloat = 0.6;
-		for (i in 0..._w)
-		{
-			pixels.setPixel32(i, 0,      c);
-			pixels.setPixel32(i, _h - 1, c);
-		}
-		for (j in 0..._h)
-		{
-			pixels.setPixel32(0,      j, c);
-			pixels.setPixel32(_w - 1, j, c);
-		}
-		s.pixels = pixels;
-	}
-
-	// ── Eventos OpenFL ───────────────────────────────────────────────────────
-
+	// ── OpenFL events ────────────────────────────────────────────────────────
 	function _onChange(_:Event):Void
 	{
-		var t = _field.text;
-		t = _applyFilter(t);
+		var t = _applyFilter(_field.text);
 		if (t != _field.text) _field.text = t;
 		_display.text = passwordMode ? _maskText(t) : t;
 		if (callback != null) callback(t, "change");
 	}
-
 	function _onFocusIn(_:FocusEvent):Void
 	{
 		_display.visible = false;
 		_field.visible   = true;
 		if (onFocusGained != null) onFocusGained();
 	}
-
 	function _onFocusOut(_:FocusEvent):Void
 	{
 		_display.text    = passwordMode ? _maskText(_field.text) : _field.text;
@@ -249,8 +226,7 @@ class CoolInputText extends FlxSpriteGroup
 		if (onFocusLost != null) onFocusLost();
 	}
 
-	// ── Filtro de entrada ────────────────────────────────────────────────────
-
+	// ── Filter ───────────────────────────────────────────────────────────────
 	function _applyFilter(t:String):String
 	{
 		return switch (filterMode)
@@ -259,75 +235,20 @@ class CoolInputText extends FlxSpriteGroup
 			case ONLY_NUMERIC:      ~/[^0-9\-\.]/.replace(t, "");
 			case ONLY_ALPHANUMERIC: ~/[^a-zA-Z0-9]/.replace(t, "");
 			case CUSTOM_FILTER:
-				if (customFilterPattern != "")
-					new EReg('[^${customFilterPattern}]', "g").replace(t, "")
-				else t;
+				(customFilterPattern != "") ? new EReg('[^${customFilterPattern}]', "g").replace(t, "") : t;
 			default: t;
 		};
 	}
+	function _maskText(t:String):String return ~/./g.replace(t, "*");
 
-	function _maskText(t:String):String
-		return ~/./g.replace(t, "*");
-
-	// ── Lifecycle ────────────────────────────────────────────────────────────
-
-	override public function update(elapsed:Float):Void
-	{
-		super.update(elapsed);
-
-		if (!_fieldOnStage) return;
-
-		// Sincronizar posición del overlay con la posición en pantalla
-		var screenPos = FlxPoint.get();
-		getScreenPosition(screenPos, camera);
-
-		var sx = FlxG.scaleMode.scale.x;
-		var sy = FlxG.scaleMode.scale.y;
-
-		_field.x = screenPos.x * sx;
-		_field.y = screenPos.y * sy;
-		_field.width  = _w * sx;
-		_field.height = _h * sy;
-
-		screenPos.put();
-
-		// Clic fuera del campo → quitar foco
-		if (FlxG.mouse.justPressed && hasFocus)
-		{
-			var mx = FlxG.mouse.x;
-			var my = FlxG.mouse.y;
-			var sp = getScreenPosition();
-			if (mx < sp.x || mx > sp.x + _w || my < sp.y || my > sp.y + _h)
-				FlxG.stage.focus = null;
-			sp.put();
-		}
-
-		// Clic dentro → dar foco
-		if (FlxG.mouse.justPressed && !hasFocus)
-		{
-			var mx = FlxG.mouse.x;
-			var my = FlxG.mouse.y;
-			var sp = getScreenPosition();
-			if (mx >= sp.x && mx <= sp.x + _w && my >= sp.y && my <= sp.y + _h)
-				FlxG.stage.focus = _field;
-			sp.put();
-		}
-	}
-
-	/** Añade el TextField al stage de OpenFL (llamar después de add()). */
-	override public function onAddedToState():Void
-	{
-		_mountTextField();
-		super.onAddedToState();
-	}
-
-	function _mountTextField():Void
+	// ── TextField mount / unmount ─────────────────────────────────────────────
+	public function _mountTextField():Void
 	{
 		if (_fieldOnStage || _field == null || FlxG.stage == null) return;
 		FlxG.stage.addChild(_field);
 		_fieldOnStage = true;
+		_needsMount   = false;
 	}
-
 	function _unmountTextField():Void
 	{
 		if (!_fieldOnStage || _field == null) return;
@@ -335,17 +256,49 @@ class CoolInputText extends FlxSpriteGroup
 		_fieldOnStage = false;
 	}
 
-	override public function kill():Void
+	// ── Lifecycle ────────────────────────────────────────────────────────────
+	override public function update(elapsed:Float):Void
 	{
-		_unmountTextField();
-		super.kill();
+		// Mount overlay on first update (replaces non-existent onAddedToState)
+		if (_needsMount && FlxG.stage != null)
+			_mountTextField();
+
+		super.update(elapsed);
+		if (!_fieldOnStage) return;
+
+		// Sync overlay position with screen position
+		var sp = FlxPoint.get();
+		getScreenPosition(sp, camera);
+		var sx = FlxG.scaleMode.scale.x;
+		var sy = FlxG.scaleMode.scale.y;
+		_field.x      = sp.x * sx;
+		_field.y      = sp.y * sy;
+		_field.width  = _w * sx;
+		_field.height = _h * sy;
+		sp.put();
+
+		// Click outside → blur
+		if (FlxG.mouse.justPressed && hasFocus)
+		{
+			var sp2 = getScreenPosition();
+			if (FlxG.mouse.x < sp2.x || FlxG.mouse.x > sp2.x + _w
+			 || FlxG.mouse.y < sp2.y || FlxG.mouse.y > sp2.y + _h)
+				FlxG.stage.focus = null;
+			sp2.put();
+		}
+		// Click inside → focus
+		if (FlxG.mouse.justPressed && !hasFocus)
+		{
+			var sp2 = getScreenPosition();
+			if (FlxG.mouse.x >= sp2.x && FlxG.mouse.x <= sp2.x + _w
+			 && FlxG.mouse.y >= sp2.y && FlxG.mouse.y <= sp2.y + _h)
+				FlxG.stage.focus = _field;
+			sp2.put();
+		}
 	}
 
-	override public function revive():Void
-	{
-		_mountTextField();
-		super.revive();
-	}
+	override public function kill():Void   { _unmountTextField(); super.kill();   }
+	override public function revive():Void { _mountTextField();   super.revive(); }
 
 	override public function destroy():Void
 	{

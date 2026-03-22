@@ -54,6 +54,8 @@ class CoolNumericStepper extends FlxSpriteGroup
 
 	var _editField : CoolInputText;
 	var _editing   : Bool = false;
+	var _dblClickTimer : Float = -1;
+	static inline var DCLICK_MS : Float = 0.3;
 
 	// ── Constructor ──────────────────────────────────────────────────────────
 
@@ -174,13 +176,18 @@ class CoolNumericStepper extends FlxSpriteGroup
 	{
 		super.update(elapsed);
 
-		// Doble clic sobre el label → edición inline
-		if (FlxG.mouse.justPressedDouble && !_editing)
+		// Doble clic sobre el label → edición inline (detección manual)
+		if (FlxG.mouse.justPressed && !_editing)
 		{
 			var mx = FlxG.mouse.x;
 			var my = FlxG.mouse.y;
 			if (mx >= x + BTN_W && mx <= x + _w - BTN_W && my >= y && my <= y + HEIGHT)
-				_startEdit();
+			{
+				var now = haxe.Timer.stamp();
+				if (_dblClickTimer >= 0 && (now - _dblClickTimer) < DCLICK_MS)
+					_startEdit();
+				_dblClickTimer = now;
+			}
 		}
 
 		// Rueda encima del widget
@@ -206,8 +213,7 @@ class CoolNumericStepper extends FlxSpriteGroup
 		_editField.filterMode = CoolInputText.ONLY_NUMERIC;
 		_editField.scrollFactor.set();
 		add(_editField);
-		_editField._mountTextField();
-		FlxG.stage.focus = @:privateAccess _editField._field;
+		_editField.hasFocus = true;
 	}
 
 	function _endEdit(confirm:Bool):Void

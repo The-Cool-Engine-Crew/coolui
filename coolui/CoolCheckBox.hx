@@ -160,6 +160,10 @@ class CoolCheckBox extends FlxSpriteGroup
 		}
 	}
 
+	/** Compat FlxUICheckBox: devuelve el FlxText del label. */
+	public function getLabel():flixel.text.FlxText
+		return _label;
+
 	// ── Update ───────────────────────────────────────────────────────────────
 
 	override public function update(elapsed:Float):Void
