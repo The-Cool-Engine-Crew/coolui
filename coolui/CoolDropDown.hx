@@ -189,17 +189,24 @@ class CoolDropDown extends FlxSpriteGroup {
 		super.update(elapsed);
 
 		// Click on the dropdown button
+		// Use screen position — x/y are LOCAL coords inside parent group,
+		// but mouse coords are in camera/world space.
 		if (FlxG.mouse.justPressed) {
-			var mx = FlxG.mouse.x;
-			var my = FlxG.mouse.y;
-			var inBtn = mx >= x && mx <= x + _w && my >= y && my <= y + ROW_H;
+			var sp = flixel.math.FlxPoint.get();
+			getScreenPosition(sp, camera);
+			var sx = sp.x; var sy = sp.y;
+			sp.put();
+
+			var mx = FlxG.mouse.screenX;
+			var my = FlxG.mouse.screenY;
+			var inBtn = mx >= sx && mx <= sx + _w && my >= sy && my <= sy + ROW_H;
 
 			if (inBtn) {
 				if (_list == null)
 					_openList();
 				else
 					_closeList();
-			} else if (_list != null && !_list.containsMouse(FlxG.mouse.x, FlxG.mouse.y)) {
+			} else if (_list != null && !_list.containsMouse(FlxG.mouse.screenX, FlxG.mouse.screenY)) {
 				_closeList();
 			}
 		}
@@ -207,22 +214,44 @@ class CoolDropDown extends FlxSpriteGroup {
 
 	// ── Floating list ───────────────────────────────────────────────────────
 
-	function _openList():Void {
+	function _openList():Void
+	{
 		var T = coolui.CoolUITheme.current;
 		var maxVisible = 8;
-		var listH = Math.min(_data.length, maxVisible) * ROW_H;
-		var openDown = (y + ROW_H + listH < FlxG.height);
-		var listY = openDown ? (y + ROW_H) : (y - listH);
 
-		_list = new _DropList(x, listY, _w, _data, _selectedIdx, T, function(idx:Int) {
-			_selectedIdx = idx;
+		// Convert from game-space to real screen pixels.
+		// getScreenPosition gives game-pixels; scale by FlxG.scaleMode.scale
+		// so the list tracks correctly at any window size or zoom level.
+		var sp  = flixel.math.FlxPoint.get();
+		getScreenPosition(sp, camera);
+		var scx     = FlxG.scaleMode.scale.x;
+		var scy     = FlxG.scaleMode.scale.y;
+		var screenX = sp.x * scx;
+		var screenY = sp.y * scy;
+		sp.put();
+
+		// Scale row height and width to match actual screen pixels.
+		var scaledRowH = Std.int(ROW_H * scy);
+		var scaledW    = Std.int(_w   * scx);
+		var listH      = Math.min(_data.length, maxVisible) * scaledRowH;
+
+		var stageH     = FlxG.stage != null ? FlxG.stage.stageHeight : FlxG.height;
+		var openDown   = (screenY + scaledRowH + listH < stageH);
+		var listY      = openDown ? (screenY + scaledRowH) : (screenY - listH);
+
+		_list = new _DropList(screenX, listY, scaledW, scaledRowH,
+		                      _data, _selectedIdx, T, function(idx:Int)
+		{
+			_selectedIdx   = idx;
 			_btnLabel.text = _data[idx].label;
 			_closeList();
-			if (callback != null)
-				callback(_data[idx].name);
+			if (callback != null) callback(_data[idx].name);
 		});
 
-		// Add to the highest available state / group
+		// Pin to screen so it doesn't scroll with the game camera.
+		_list.scrollFactor.set(0, 0);
+		_list.cameras = cameras;
+
 		var target:FlxGroup = (_listTarget != null) ? _listTarget : FlxG.state;
 		target.add(_list);
 	}
@@ -260,18 +289,21 @@ private class _DropList extends FlxSpriteGroup {
 	var _w:Int;
 	var _scroll:Int = 0;
 
-	public function new(lx:Float, ly:Float, w:Int, data, selected:Int, T:CoolTheme, onSelect:Int->Void) {
+	public function new(lx:Float, ly:Float, w:Int, rowH:Int,
+	                    data, selected:Int, T:CoolTheme, onSelect:Int->Void)
+	{
 		super(lx, ly);
-		_data = data;
+		_data     = data;
 		_selected = selected;
-		_w = w;
+		_w        = w;
+		_rowH     = (rowH > 0) ? rowH : CoolDropDown.ROW_H;
 		_onSelect = onSelect;
 		_build(T);
 	}
 
 	function _build(T:CoolTheme):Void {
 		var visible = Std.int(Math.min(_data.length, MAX_VISIBLE));
-		var h = visible * CoolDropDown.ROW_H;
+		var h = visible * _rowH;
 
 		// Background
 		var bg = new FlxSprite(0, 0);
@@ -296,12 +328,12 @@ private class _DropList extends FlxSpriteGroup {
 
 		for (i in 0...visible) {
 			var idx = i + _scroll;
-			var rowBg = new FlxSprite(1, i * CoolDropDown.ROW_H);
+			var rowBg = new FlxSprite(1, i * _rowH);
 			var rowColor = (idx == _selected) ? FlxColor.fromInt(T.rowSelected) : (i % 2 == 0 ? FlxColor.fromInt(T.rowEven) : FlxColor.fromInt(T.rowOdd));
-			rowBg.makeGraphic(_w - 2, CoolDropDown.ROW_H, rowColor);
+			rowBg.makeGraphic(_w - 2, _rowH, rowColor);
 			add(rowBg);
 
-			var lbl = new FlxText(5, i * CoolDropDown.ROW_H + 1, _w - 10, _data[idx].label, 8);
+			var lbl = new FlxText(5, i * _rowH + 1, _w - 10, _data[idx].label, 8);
 			lbl.color = FlxColor.fromInt(idx == _selected ? T.textPrimary : T.textSecondary);
 			add(lbl);
 		}
@@ -309,17 +341,19 @@ private class _DropList extends FlxSpriteGroup {
 
 	public function containsMouse(mx:Float, my:Float):Bool {
 		var visible = Std.int(Math.min(_data.length, MAX_VISIBLE));
-		return mx >= x && mx <= x + _w && my >= y && my <= y + visible * CoolDropDown.ROW_H;
+		// x/y here are screen coords (list is added at state level, no parent offset)
+		return mx >= x && mx <= x + _w && my >= y && my <= y + visible * _rowH;
 	}
 
 	override public function update(elapsed:Float):Void {
 		super.update(elapsed);
 		if (FlxG.mouse.justPressed) {
-			var mx = FlxG.mouse.x;
-			var my = FlxG.mouse.y;
+			// Use screenX/Y to match the screen-space position of the list
+			var mx = FlxG.mouse.screenX;
+			var my = FlxG.mouse.screenY;
 			if (!containsMouse(mx, my))
 				return;
-			var row = Std.int((my - y) / CoolDropDown.ROW_H) + _scroll;
+			var row = Std.int((my - y) / _rowH) + _scroll;
 			if (row >= 0 && row < _data.length && _onSelect != null)
 				_onSelect(row);
 		}
