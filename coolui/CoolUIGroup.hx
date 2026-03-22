@@ -19,13 +19,11 @@ import flixel.group.FlxSpriteGroup;
  * To scroll the content, adjust `scrollFactor` on children
  * or use the constructor's `scrollFactor` parameter.
  */
-class CoolUIGroup extends FlxSpriteGroup
-{
+class CoolUIGroup extends FlxSpriteGroup {
 	/** Name used by `CoolTabMenu` to match this group to its tab. */
 	public var name:String = "";
 
-	public function new(x:Float = 0, y:Float = 0)
-	{
+	public function new(x:Float = 0, y:Float = 0) {
 		super(x, y);
 	}
 }

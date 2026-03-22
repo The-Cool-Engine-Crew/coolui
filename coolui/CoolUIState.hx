@@ -8,17 +8,16 @@ import flixel.FlxState;
  * Extends FlxState and exposes transIn / transOut as Dynamic for
  * compatibility with states that assign them to null (TitleState, PlayState…).
  */
-class CoolUIState extends FlxState
-{
+class CoolUIState extends FlxState {
 	/**
 	 * Entry transition. Assign null to disable it.
 	 * Compatible with FlxTransitionableState.transIn.
 	 */
-	public var transIn  : Dynamic = null;
+	public var transIn:Dynamic = null;
 
 	/**
 	 * Exit transition. Assign null to disable it.
 	 * Compatible with FlxTransitionableState.transOut.
 	 */
-	public var transOut : Dynamic = null;
+	public var transOut:Dynamic = null;
 }

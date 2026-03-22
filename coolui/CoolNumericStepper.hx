@@ -1,13 +1,11 @@
 package coolui;
 
 import coolui.CoolTheme;
-
 import flixel.FlxG;
 import flixel.FlxSprite;
 import flixel.group.FlxSpriteGroup;
 import flixel.text.FlxText;
 import flixel.util.FlxColor;
-
 
 /**
  * CoolNumericStepper — Drop-in replacement for `FlxUINumericStepper`, no flixel-ui required.
@@ -17,45 +15,43 @@ import flixel.util.FlxColor;
  *   var s = new CoolNumericStepper(x, y, step, value, min, max, decimals);
  *   s.value_change = function(v:Float) { trace(v); };
  *
- * Controles:
+ * Controls:
  *  • Click ▲ / ▼     → increment / decrement by `step`.
  *  • Mouse wheel    → increment / decrement when cursor is over the widget.
  *  • Double-click label → opens inline CoolInputText for direct value entry.
  *  • Hold Shift     → multiplies step by 10.
  *  • Hold Ctrl      → divides step by 10.
  */
-class CoolNumericStepper extends FlxSpriteGroup
-{
+class CoolNumericStepper extends FlxSpriteGroup {
 	// ── Layout ───────────────────────────────────────────────────────────────
-
-	static inline var BTN_W  : Int = 16;
-	static inline var HEIGHT : Int = 18;
+	static inline var BTN_W:Int = 16;
+	static inline var HEIGHT:Int = 18;
 
 	// ── Public properties ─────────────────────────────────────────────────
 
 	/** Callback fired when the value changes: `value_change(newValue)`. */
-	public var value_change : Float -> Void;
+	public var value_change:Float->Void;
 
-	public var value(get, set)   : Float;
-	public var stepSize          : Float;
-	public var minValue          : Float;
-	public var maxValue          : Float;
-	public var decimals          : Int;
+	public var value(get, set):Float;
+	public var stepSize:Float;
+	public var minValue:Float;
+	public var maxValue:Float;
+	public var decimals:Int;
 
 	// ── State ───────────────────────────────────────────────────────────────
+	var _value:Float;
+	var _w:Int;
 
-	var _value  : Float;
-	var _w      : Int;
+	var _bg:FlxSprite;
+	var _btnUp:_StepBtn;
+	var _btnDn:_StepBtn;
+	var _label:FlxText;
 
-	var _bg     : FlxSprite;
-	var _btnUp  : _StepBtn;
-	var _btnDn  : _StepBtn;
-	var _label  : FlxText;
+	var _editField:CoolInputText;
+	var _editing:Bool = false;
+	var _dblClickTimer:Float = -1;
 
-	var _editField : CoolInputText;
-	var _editing   : Bool = false;
-	var _dblClickTimer : Float = -1;
-	static inline var DCLICK_MS : Float = 0.3;
+	static inline var DCLICK_MS:Float = 0.3;
 
 	// ── Constructor ──────────────────────────────────────────────────────────
 
@@ -69,11 +65,7 @@ class CoolNumericStepper extends FlxSpriteGroup
 	 * @param decimals  Decimal places to display (0 = integer)
 	 * @param width     Total width (default 80)
 	 */
-	public function new(px:Float = 0, py:Float = 0,
-	                    stepSize:Float = 1, value:Float = 0,
-	                    min:Float = 0, max:Float = 100,
-	                    decimals:Int = 0, width:Int = 80)
-	{
+	public function new(px:Float = 0, py:Float = 0, stepSize:Float = 1, value:Float = 0, min:Float = 0, max:Float = 100, decimals:Int = 0, width:Int = 80) {
 		super(px, py);
 		this.stepSize = stepSize;
 		this.minValue = min;
@@ -86,22 +78,23 @@ class CoolNumericStepper extends FlxSpriteGroup
 
 	// ── Getters / Setters ────────────────────────────────────────────────────
 
-	function get_value():Float return _value;
+	function get_value():Float
+		return _value;
 
-	function set_value(v:Float):Float
-	{
+	function set_value(v:Float):Float {
 		var clamped = _clamp(v);
-		if (clamped == _value) return _value;
+		if (clamped == _value)
+			return _value;
 		_value = clamped;
 		_updateLabel();
-		if (value_change != null) value_change(_value);
+		if (value_change != null)
+			value_change(_value);
 		return _value;
 	}
 
 	// ── Build ────────────────────────────────────────────────────────────────
 
-	function _build():Void
-	{
+	function _build():Void {
 		var T = coolui.CoolUITheme.current;
 		var labelW = _w - BTN_W * 2;
 
@@ -132,57 +125,60 @@ class CoolNumericStepper extends FlxSpriteGroup
 
 	// ── Logic ───────────────────────────────────────────────────────────────
 
-	public function step(dir:Int):Void
-	{
+	public function step(dir:Int):Void {
 		var s = stepSize;
-		if (FlxG.keys.pressed.SHIFT) s *= 10;
-		if (FlxG.keys.pressed.CONTROL) s /= 10;
+		if (FlxG.keys.pressed.SHIFT)
+			s *= 10;
+		if (FlxG.keys.pressed.CONTROL)
+			s /= 10;
 		value = _value + dir * s;
 	}
 
-	function _clamp(v:Float):Float
-	{
-		if (v < minValue) return minValue;
-		if (v > maxValue) return maxValue;
+	function _clamp(v:Float):Float {
+		if (v < minValue)
+			return minValue;
+		if (v > maxValue)
+			return maxValue;
 		return _round(v);
 	}
 
-	function _round(v:Float):Float
-	{
-		if (decimals <= 0) return Math.round(v);
+	function _round(v:Float):Float {
+		if (decimals <= 0)
+			return Math.round(v);
 		var factor = Math.pow(10, decimals);
 		return Math.round(v * factor) / factor;
 	}
 
-	function _formatValue(v:Float):String
-	{
-		if (decimals <= 0) return Std.string(Std.int(v));
+	function _formatValue(v:Float):String {
+		if (decimals <= 0)
+			return Std.string(Std.int(v));
 		var s = Std.string(Math.round(v * Math.pow(10, decimals)) / Math.pow(10, decimals));
 		// Ensure minimum decimal digits after the dot
 		var dotIdx = s.indexOf(".");
-		if (dotIdx < 0) { s += "."; dotIdx = s.length - 1; }
-		while (s.length - dotIdx - 1 < decimals) s += "0";
+		if (dotIdx < 0) {
+			s += ".";
+			dotIdx = s.length - 1;
+		}
+		while (s.length - dotIdx - 1 < decimals)
+			s += "0";
 		return s;
 	}
 
-	function _updateLabel():Void
-	{
-		if (_label != null) _label.text = _formatValue(_value);
+	function _updateLabel():Void {
+		if (_label != null)
+			_label.text = _formatValue(_value);
 	}
 
 	// ── Update ───────────────────────────────────────────────────────────────
 
-	override public function update(elapsed:Float):Void
-	{
+	override public function update(elapsed:Float):Void {
 		super.update(elapsed);
 
 		// Double-click on label → inline edit mode (manual detection)
-		if (FlxG.mouse.justPressed && !_editing)
-		{
+		if (FlxG.mouse.justPressed && !_editing) {
 			var mx = FlxG.mouse.x;
 			var my = FlxG.mouse.y;
-			if (mx >= x + BTN_W && mx <= x + _w - BTN_W && my >= y && my <= y + HEIGHT)
-			{
+			if (mx >= x + BTN_W && mx <= x + _w - BTN_W && my >= y && my <= y + HEIGHT) {
 				var now = haxe.Timer.stamp();
 				if (_dblClickTimer >= 0 && (now - _dblClickTimer) < DCLICK_MS)
 					_startEdit();
@@ -191,8 +187,7 @@ class CoolNumericStepper extends FlxSpriteGroup
 		}
 
 		// Mouse wheel over widget
-		if (FlxG.mouse.wheel != 0)
-		{
+		if (FlxG.mouse.wheel != 0) {
 			var mx = FlxG.mouse.x;
 			var my = FlxG.mouse.y;
 			if (mx >= x && mx <= x + _w && my >= y && my <= y + HEIGHT)
@@ -204,9 +199,9 @@ class CoolNumericStepper extends FlxSpriteGroup
 			_endEdit(FlxG.keys.justPressed.ENTER);
 	}
 
-	function _startEdit():Void
-	{
-		if (_editField != null) return;
+	function _startEdit():Void {
+		if (_editField != null)
+			return;
 		_editing = true;
 		_label.visible = false;
 		_editField = new CoolInputText(BTN_W, 0, _w - BTN_W * 2, _formatValue(_value), 8);
@@ -216,13 +211,13 @@ class CoolNumericStepper extends FlxSpriteGroup
 		_editField.hasFocus = true;
 	}
 
-	function _endEdit(confirm:Bool):Void
-	{
-		if (!_editing || _editField == null) return;
-		if (confirm)
-		{
+	function _endEdit(confirm:Bool):Void {
+		if (!_editing || _editField == null)
+			return;
+		if (confirm) {
 			var parsed = Std.parseFloat(_editField.text);
-			if (!Math.isNaN(parsed)) value = parsed;
+			if (!Math.isNaN(parsed))
+				value = parsed;
 		}
 		_editField.destroy();
 		remove(_editField, true);
@@ -231,10 +226,12 @@ class CoolNumericStepper extends FlxSpriteGroup
 		_label.visible = true;
 	}
 
-	override public function destroy():Void
-	{
+	override public function destroy():Void {
 		value_change = null;
-		if (_editField != null) { _editField.destroy(); _editField = null; }
+		if (_editField != null) {
+			_editField.destroy();
+			_editField = null;
+		}
 		super.destroy();
 	}
 }
@@ -243,20 +240,18 @@ class CoolNumericStepper extends FlxSpriteGroup
 // _StepBtn
 // ─────────────────────────────────────────────────────────────────────────────
 
-private class _StepBtn extends FlxSpriteGroup
-{
-	public var onClick : Void -> Void;
+private class _StepBtn extends FlxSpriteGroup {
+	public var onClick:Void->Void;
 
-	var _bg    : FlxSprite;
-	var _label : FlxText;
-	var _bw    : Int;
-	var _bh    : Int;
+	var _bg:FlxSprite;
+	var _label:FlxText;
+	var _bw:Int;
+	var _bh:Int;
 
-	public function new(bx:Float, by:Float, bw:Int, bh:Int, arrow:String,
-	                    T:CoolTheme)
-	{
+	public function new(bx:Float, by:Float, bw:Int, bh:Int, arrow:String, T:CoolTheme) {
 		super(bx, by);
-		_bw = bw; _bh = bh;
+		_bw = bw;
+		_bh = bh;
 
 		_bg = new FlxSprite(0, 0);
 		_bg.makeGraphic(bw, bh, T.bgHover);
@@ -269,30 +264,33 @@ private class _StepBtn extends FlxSpriteGroup
 		add(_label);
 	}
 
-	override public function update(elapsed:Float):Void
-	{
+	override public function update(elapsed:Float):Void {
 		super.update(elapsed);
-		var hover = FlxG.mouse.x >= x && FlxG.mouse.x <= x + _bw
-		         && FlxG.mouse.y >= y && FlxG.mouse.y <= y + _bh;
+		var hover = FlxG.mouse.x >= x && FlxG.mouse.x <= x + _bw && FlxG.mouse.y >= y && FlxG.mouse.y <= y + _bh;
 		_bg.alpha = hover ? 1.4 : 1.0;
-		if (hover && FlxG.mouse.justPressed && onClick != null) onClick();
+		if (hover && FlxG.mouse.justPressed && onClick != null)
+			onClick();
 
 		// Hold pressed: fires rapidly after 400ms
-		if (hover && FlxG.mouse.pressed)
-		{
-			@:privateAccess if (_holdTimer >= 0.4 && _holdRepeat >= 0.08)
-			{
-				if (onClick != null) onClick();
+		if (hover && FlxG.mouse.pressed) {
+			@:privateAccess if (_holdTimer >= 0.4 && _holdRepeat >= 0.08) {
+				if (onClick != null)
+					onClick();
 				_holdRepeat = 0;
 			}
-			_holdTimer  += elapsed;
+			_holdTimer += elapsed;
 			_holdRepeat += elapsed;
+		} else {
+			_holdTimer = 0;
+			_holdRepeat = 0;
 		}
-		else { _holdTimer = 0; _holdRepeat = 0; }
 	}
 
-	var _holdTimer  : Float = 0;
-	var _holdRepeat : Float = 0;
+	var _holdTimer:Float = 0;
+	var _holdRepeat:Float = 0;
 
-	override public function destroy():Void { onClick = null; super.destroy(); }
+	override public function destroy():Void {
+		onClick = null;
+		super.destroy();
+	}
 }

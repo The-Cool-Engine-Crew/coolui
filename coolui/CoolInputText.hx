@@ -14,7 +14,8 @@ import openfl.text.TextFieldType;
 import openfl.text.TextFormat;
 
 // Embed VCR OSD Mono from the library's assets folder.
-@:font("../assets/vcr.ttf")
+
+@:font("assets/vcr.ttf")
 private class _VCRFont extends Font {}
 
 /**
@@ -29,73 +30,82 @@ private class _VCRFont extends Font {}
  *   new CoolInputText(x, y, width, text, fontSize)
  *   new CoolInputText(x, y, width, text, fontSize, textColor, bgColor)
  */
-class CoolInputText extends FlxSpriteGroup
-{
+class CoolInputText extends FlxSpriteGroup {
 	// ── Filters ──────────────────────────────────────────────────────────────
-	public static inline var NO_FILTER         : Int = 0;
-	public static inline var ONLY_ALPHA        : Int = 1;
-	public static inline var ONLY_NUMERIC      : Int = 2;
-	public static inline var ONLY_ALPHANUMERIC : Int = 3;
-	public static inline var CUSTOM_FILTER     : Int = 4;
+	public static inline var NO_FILTER:Int = 0;
+	public static inline var ONLY_ALPHA:Int = 1;
+	public static inline var ONLY_NUMERIC:Int = 2;
+	public static inline var ONLY_ALPHANUMERIC:Int = 3;
+	public static inline var CUSTOM_FILTER:Int = 4;
 
 	// ── Callbacks ────────────────────────────────────────────────────────────
-	public var callback      : String -> String -> Void;
-	public var onFocusGained : Void -> Void;
-	public var onFocusLost   : Void -> Void;
+	public var callback:String->String->Void;
+	public var onFocusGained:Void->Void;
+	public var onFocusLost:Void->Void;
 
 	// Alias for DialogueEditor and other callers
-	public var focusGained(get, set) : Void -> Void;
-	public var focusLost(get, set)   : Void -> Void;
-	function get_focusGained() return onFocusGained;
-	function set_focusGained(v) { onFocusGained = v; return v; }
-	function get_focusLost()    return onFocusLost;
-	function set_focusLost(v)   { onFocusLost   = v; return v; }
+	public var focusGained(get, set):Void->Void;
+	public var focusLost(get, set):Void->Void;
+
+	function get_focusGained()
+		return onFocusGained;
+
+	function set_focusGained(v) {
+		onFocusGained = v;
+		return v;
+	}
+
+	function get_focusLost()
+		return onFocusLost;
+
+	function set_focusLost(v) {
+		onFocusLost = v;
+		return v;
+	}
 
 	// ── Public properties ─────────────────────────────────────────────────
-	public var text(get, set)        : String;
-	public var hasFocus(get, set)    : Bool;
-	public var maxLength(get, set)   : Int;
-	public var passwordMode(get,set) : Bool;
-	public var filterMode            : Int = NO_FILTER;
-	public var customFilterPattern   : String = "";
+	public var text(get, set):String;
+	public var hasFocus(get, set):Bool;
+	public var maxLength(get, set):Int;
+	public var passwordMode(get, set):Bool;
+	public var filterMode:Int = NO_FILTER;
+	public var customFilterPattern:String = "";
 
-	public var lines(get, set) : Int;
-	public var backgroundColor(get, set)   : Int;
-	public var fieldBorderColor(get, set)  : Int;
-	public var fieldBorderThickness(default, set) : Int = 1;
+	public var lines(get, set):Int;
+	public var backgroundColor(get, set):Int;
+	public var fieldBorderColor(get, set):Int;
+	public var fieldBorderThickness(default, set):Int = 1;
 
 	// ── Internals ────────────────────────────────────────────────────────────
-	var _field     : TextField;
-	static var _fontRegistered : Bool = false;
-	var _fmt       : TextFormat;
+	var _field:TextField;
 
-	var _w         : Int;
-	var _h         : Int;
-	var _fontSize  : Int;
-	var _lines     : Int = 1;
-	var _bgColor   : Int;
-	var _brdColor  : Int;
-	var _textColor : Int;
+	static var _fontRegistered:Bool = false;
 
-	var _onStage   : Bool = false;
+	var _fmt:TextFormat;
+
+	var _w:Int;
+	var _h:Int;
+	var _fontSize:Int;
+	var _lines:Int = 1;
+	var _bgColor:Int;
+	var _brdColor:Int;
+	var _textColor:Int;
+
+	var _onStage:Bool = false;
 
 	// ── Constructor ──────────────────────────────────────────────────────────
-	public function new(px:Float = 0, py:Float = 0, width:Int = 150,
-	                    text:String = "", fontSize:Int = 8,
-	                    ?textColor:Int, ?bgColor:Int)
-	{
+	public function new(px:Float = 0, py:Float = 0, width:Int = 150, text:String = "", fontSize:Int = 8, ?textColor:Int, ?bgColor:Int) {
 		super(px, py);
-		_w         = (width    > 0) ? width    : 150;
-		_fontSize  = (fontSize > 0) ? fontSize : 8;
-		_h         = _fontSize + 8;
+		_w = (width > 0) ? width : 150;
+		_fontSize = (fontSize > 0) ? fontSize : 8;
+		_h = _fontSize + 8;
 		_textColor = (textColor != null) ? textColor : coolui.CoolUITheme.current.textPrimary;
-		_bgColor   = (bgColor   != null) ? bgColor   : coolui.CoolUITheme.current.bgPanelAlt;
-		_brdColor  = coolui.CoolUITheme.current.borderColor;
+		_bgColor = (bgColor != null) ? bgColor : coolui.CoolUITheme.current.bgPanelAlt;
+		_brdColor = coolui.CoolUITheme.current.borderColor;
 
 		// Build the TextField
 		// Register the embedded VCR font on first use.
-		if (!_fontRegistered)
-		{
+		if (!_fontRegistered) {
 			Font.registerFont(_VCRFont);
 			_fontRegistered = true;
 		}
@@ -104,19 +114,19 @@ class CoolInputText extends FlxSpriteGroup
 		var _screenFontSize = Std.int(_fontSize * 1.5);
 		_fmt = new TextFormat("VCR OSD Mono", _screenFontSize, _textColor);
 		_field = new TextField();
-		_field.type              = TextFieldType.INPUT;
+		_field.type = TextFieldType.INPUT;
 		_field.defaultTextFormat = _fmt;
-		_field.background        = true;
-		_field.backgroundColor   = _bgColor;
-		_field.border            = true;
-		_field.borderColor       = _brdColor;
-		_field.width             = _w;
-		_field.height            = _h;
-		_field.text              = text;
-		_field.selectable        = true;
+		_field.background = true;
+		_field.backgroundColor = _bgColor;
+		_field.border = true;
+		_field.borderColor = _brdColor;
+		_field.width = _w;
+		_field.height = _h;
+		_field.text = text;
+		_field.selectable = true;
 
-		_field.addEventListener(Event.CHANGE,         _onChange);
-		_field.addEventListener(FocusEvent.FOCUS_IN,  _onFocusIn);
+		_field.addEventListener(Event.CHANGE, _onChange);
+		_field.addEventListener(FocusEvent.FOCUS_IN, _onFocusIn);
 		_field.addEventListener(FocusEvent.FOCUS_OUT, _onFocusOut);
 		// Note: Caps Lock works automatically because the OpenFL TextField
 		// receives input directly from the OS when
@@ -124,109 +134,134 @@ class CoolInputText extends FlxSpriteGroup
 	}
 
 	// ── Getters / Setters ────────────────────────────────────────────────────
-	function get_text()  return (_field != null) ? _field.text : "";
-	function set_text(v:String):String
-	{
-		if (_field != null) _field.text = v;
+	function get_text()
+		return (_field != null) ? _field.text : "";
+
+	function set_text(v:String):String {
+		if (_field != null)
+			_field.text = v;
 		return v;
 	}
 
 	function get_hasFocus():Bool
 		return _onStage && FlxG.stage != null && FlxG.stage.focus == _field;
-	function set_hasFocus(v:Bool):Bool
-	{
-		if (FlxG.stage == null) return v;
-		if (v) { _mount(); FlxG.stage.focus = _field; }
-		else if (FlxG.stage.focus == _field) FlxG.stage.focus = null;
+
+	function set_hasFocus(v:Bool):Bool {
+		if (FlxG.stage == null)
+			return v;
+		if (v) {
+			_mount();
+			FlxG.stage.focus = _field;
+		} else if (FlxG.stage.focus == _field)
+			FlxG.stage.focus = null;
 		return v;
 	}
 
-	function get_maxLength()  return (_field != null) ? _field.maxChars : 0;
-	function set_maxLength(v:Int):Int { if (_field != null) _field.maxChars = v; return v; }
+	function get_maxLength()
+		return (_field != null) ? _field.maxChars : 0;
 
-	function get_passwordMode()  return (_field != null) ? _field.displayAsPassword : false;
-	function set_passwordMode(v:Bool):Bool
-	{
-		if (_field != null) _field.displayAsPassword = v;
+	function set_maxLength(v:Int):Int {
+		if (_field != null)
+			_field.maxChars = v;
 		return v;
 	}
 
-	function get_lines()  return _lines;
-	function set_lines(v:Int):Int
-	{
+	function get_passwordMode()
+		return (_field != null) ? _field.displayAsPassword : false;
+
+	function set_passwordMode(v:Bool):Bool {
+		if (_field != null)
+			_field.displayAsPassword = v;
+		return v;
+	}
+
+	function get_lines()
+		return _lines;
+
+	function set_lines(v:Int):Int {
 		_lines = (v > 0) ? v : 1;
 		_h = _lines * (_fontSize + 4) + 4;
-		if (_field != null)
-		{
-			_field.height    = _h;
+		if (_field != null) {
+			_field.height = _h;
 			_field.multiline = _lines > 1;
-			_field.wordWrap  = _lines > 1;
+			_field.wordWrap = _lines > 1;
 		}
 		return _lines;
 	}
 
-	function get_backgroundColor()  return _bgColor;
-	function set_backgroundColor(v:Int):Int
-	{
+	function get_backgroundColor()
+		return _bgColor;
+
+	function set_backgroundColor(v:Int):Int {
 		_bgColor = v;
-		if (_field != null) { _field.background = true; _field.backgroundColor = v; }
+		if (_field != null) {
+			_field.background = true;
+			_field.backgroundColor = v;
+		}
 		return v;
 	}
 
-	function get_fieldBorderColor()  return _brdColor;
-	function set_fieldBorderColor(v:Int):Int
-	{
+	function get_fieldBorderColor()
+		return _brdColor;
+
+	function set_fieldBorderColor(v:Int):Int {
 		_brdColor = v;
-		if (_field != null) { _field.border = true; _field.borderColor = v; }
+		if (_field != null) {
+			_field.border = true;
+			_field.borderColor = v;
+		}
 		return v;
 	}
-	function set_fieldBorderThickness(v:Int):Int
-	{
+
+	function set_fieldBorderThickness(v:Int):Int {
 		fieldBorderThickness = v;
 		return v;
 	}
 
 	// ── TextField mount ───────────────────────────────────────────────────────
-	public function _mount():Void
-	{
-		if (_onStage || _field == null || FlxG.stage == null) return;
+	public function _mount():Void {
+		if (_onStage || _field == null || FlxG.stage == null)
+			return;
 		FlxG.stage.addChild(_field);
 		_onStage = true;
 	}
 
-	function _unmount():Void
-	{
-		if (!_onStage || _field == null) return;
-		if (_field.parent != null) _field.parent.removeChild(_field);
+	function _unmount():Void {
+		if (!_onStage || _field == null)
+			return;
+		if (_field.parent != null)
+			_field.parent.removeChild(_field);
 		_onStage = false;
 	}
 
 	// ── OpenFL events ────────────────────────────────────────────────────────
-	function _onChange(_:Event):Void
-	{
+	function _onChange(_:Event):Void {
 		var t = _applyFilter(_field.text);
-		if (t != _field.text) _field.text = t;
-		if (callback != null) callback(t, "change");
+		if (t != _field.text)
+			_field.text = t;
+		if (callback != null)
+			callback(t, "change");
 	}
-	function _onFocusIn(_:FocusEvent):Void
-	{
+
+	function _onFocusIn(_:FocusEvent):Void {
 		// Disable FlxG.keys while the field has focus
 		// so keystrokes don't bleed through to the game/editor
 		FlxG.keys.enabled = false;
-		if (onFocusGained != null) onFocusGained();
+		if (onFocusGained != null)
+			onFocusGained();
 	}
-	function _onFocusOut(_:FocusEvent):Void
-	{
+
+	function _onFocusOut(_:FocusEvent):Void {
 		FlxG.keys.enabled = true;
-		if (onFocusLost != null) onFocusLost();
+		if (onFocusLost != null)
+			onFocusLost();
 	}
 
 	// ── Filter ────────────────────────────────────────────────────────────────
-	function _applyFilter(t:String):String
-	{
+	function _applyFilter(t:String):String {
 		return switch (filterMode) {
-			case ONLY_ALPHA:        ~/[^a-zA-Z]/.replace(t, "");
-			case ONLY_NUMERIC:      ~/[^0-9\-\.]/.replace(t, "");
+			case ONLY_ALPHA: ~/[^a-zA-Z]/.replace(t, "");
+			case ONLY_NUMERIC: ~/[^0-9\-\.]/.replace(t, "");
 			case ONLY_ALPHANUMERIC: ~/[^a-zA-Z0-9]/.replace(t, "");
 			case CUSTOM_FILTER:
 				customFilterPattern != "" ? new EReg('[^${customFilterPattern}]', "g").replace(t, "") : t;
@@ -235,11 +270,13 @@ class CoolInputText extends FlxSpriteGroup
 	}
 
 	// ── Update — sync TextField position ────────────────────────────
-	override public function update(elapsed:Float):Void
-	{
+	override public function update(elapsed:Float):Void {
 		super.update(elapsed);
 
-		if (!_onStage) { _mount(); return; }
+		if (!_onStage) {
+			_mount();
+			return;
+		}
 
 		// Calculate position in real screen pixels
 		var sp = FlxPoint.get();
@@ -248,10 +285,10 @@ class CoolInputText extends FlxSpriteGroup
 		var sx = FlxG.scaleMode.scale.x;
 		var sy = FlxG.scaleMode.scale.y;
 
-		_field.x      = sp.x * sx;
-		_field.y      = sp.y * sy;
-		_field.width  = _w   * sx;
-		_field.height = _h   * sy;
+		_field.x = sp.x * sx;
+		_field.y = sp.y * sy;
+		_field.width = _w * sx;
+		_field.height = _h * sy;
 
 		// Scale font size: 1.5× game size then apply screen scale factor
 		_fmt.size = Std.int(_fontSize * 1.5 * sy);
@@ -265,39 +302,38 @@ class CoolInputText extends FlxSpriteGroup
 	}
 
 	// ── Override visible ──────────────────────────────────────────────────────
-	override function set_visible(v:Bool):Bool
-	{
-		if (_field != null) _field.visible = v;
+	override function set_visible(v:Bool):Bool {
+		if (_field != null)
+			_field.visible = v;
 		return super.set_visible(v);
 	}
 
-	override public function kill():Void
-	{
+	override public function kill():Void {
 		FlxG.keys.enabled = true;
-		if (_field != null) _field.visible = false;
+		if (_field != null)
+			_field.visible = false;
 		super.kill();
 	}
-	override public function revive():Void
-	{
-		if (_field != null) _field.visible = true;
+
+	override public function revive():Void {
+		if (_field != null)
+			_field.visible = true;
 		super.revive();
 	}
 
-	override public function destroy():Void
-	{
+	override public function destroy():Void {
 		// Ensure keys are re-enabled when the field is destroyed
 		FlxG.keys.enabled = true;
 		_unmount();
-		if (_field != null)
-		{
-			_field.removeEventListener(Event.CHANGE,         _onChange);
-			_field.removeEventListener(FocusEvent.FOCUS_IN,  _onFocusIn);
+		if (_field != null) {
+			_field.removeEventListener(Event.CHANGE, _onChange);
+			_field.removeEventListener(FocusEvent.FOCUS_IN, _onFocusIn);
 			_field.removeEventListener(FocusEvent.FOCUS_OUT, _onFocusOut);
 			_field = null;
 		}
-		callback      = null;
+		callback = null;
 		onFocusGained = null;
-		onFocusLost   = null;
+		onFocusLost = null;
 		super.destroy();
 	}
 }

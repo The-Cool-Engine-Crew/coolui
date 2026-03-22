@@ -8,38 +8,34 @@ import flixel.tweens.FlxEase;
 import flixel.tweens.FlxTween;
 import flixel.util.FlxColor;
 
-
 /**
  * CoolCheckBox — Drop-in replacement for `FlxUICheckBox`, no flixel-ui required.
  *
  * API compatible:
  *
- *   var cb = new CoolCheckBox(x, y, null, null, "Etiqueta", 120);
+ *   var cb = new CoolCheckBox(x, y, null, null, "Label", 120);
  *   cb.checked  = true;
  *   cb.callback = function(v:Bool) { trace(v); };
  *
  * Parameters at positions 3 and 4 (on/off state text) are ignored
  * to maintain API compatibility with FlxUICheckBox.
  */
-class CoolCheckBox extends FlxSpriteGroup
-{
-	static inline var BOX_SIZE : Int = 14;
-	static inline var HEIGHT   : Int = 16;
+class CoolCheckBox extends FlxSpriteGroup {
+	static inline var BOX_SIZE:Int = 14;
+	static inline var HEIGHT:Int = 16;
 
 	// ── Public API ──────────────────────────────────────────────────────────
+	public var callback:Bool->Void;
 
-	public var callback : Bool -> Void;
-
-	public var checked(get, set) : Bool;
+	public var checked(get, set):Bool;
 
 	// ── Internals ────────────────────────────────────────────────────────────
-
-	var _box     : FlxSprite;
-	var _check   : FlxSprite;
-	var _label   : FlxText;
-	var _checked : Bool;
-	var _lw      : Int;
-	var _tween   : FlxTween;
+	var _box:FlxSprite;
+	var _check:FlxSprite;
+	var _label:FlxText;
+	var _checked:Bool;
+	var _lw:Int;
+	var _tween:FlxTween;
 
 	// ── Constructor ──────────────────────────────────────────────────────────
 
@@ -52,24 +48,22 @@ class CoolCheckBox extends FlxSpriteGroup
 	 * @param labelWidth  Label width in px
 	 * @param checked     Initial checked state
 	 */
-	public function new(px:Float = 0, py:Float = 0,
-	                    onGfx:Dynamic = null, offGfx:Dynamic = null,
-	                    label:String = "", labelWidth:Int = 100,
-	                    checked:Bool = false)
-	{
+	public function new(px:Float = 0, py:Float = 0, onGfx:Dynamic = null, offGfx:Dynamic = null, label:String = "", labelWidth:Int = 100,
+			checked:Bool = false) {
 		super(px, py);
-		_lw      = labelWidth;
+		_lw = labelWidth;
 		_checked = checked;
 		_build(label);
 	}
 
 	// ── Getter / Setter ──────────────────────────────────────────────────────
 
-	function get_checked():Bool return _checked;
+	function get_checked():Bool
+		return _checked;
 
-	function set_checked(v:Bool):Bool
-	{
-		if (_checked == v) return v;
+	function set_checked(v:Bool):Bool {
+		if (_checked == v)
+			return v;
 		_checked = v;
 		_animateCheck(v);
 		return v;
@@ -77,8 +71,7 @@ class CoolCheckBox extends FlxSpriteGroup
 
 	// ── Build ────────────────────────────────────────────────────────────────
 
-	function _build(label:String):Void
-	{
+	function _build(label:String):Void {
 		var T = coolui.CoolUITheme.current;
 
 		// Box background
@@ -94,13 +87,12 @@ class CoolCheckBox extends FlxSpriteGroup
 		_check = new FlxSprite(2, (HEIGHT - BOX_SIZE) >> 1);
 		_check.makeGraphic(BOX_SIZE - 4, BOX_SIZE - 4, FlxColor.TRANSPARENT);
 		_drawCheck(_check, FlxColor.fromInt(T.accent));
-		_check.alpha   = _checked ? 1.0 : 0.0;
+		_check.alpha = _checked ? 1.0 : 0.0;
 		_check.visible = _checked;
 		add(_check);
 
 		// Label
-		if (label != null && label.length > 0)
-		{
+		if (label != null && label.length > 0) {
 			_label = new FlxText(BOX_SIZE + 4, 1, _lw, label, 10);
 			_label.color = FlxColor.fromInt(T.textPrimary);
 			_label.scrollFactor.set();
@@ -108,28 +100,31 @@ class CoolCheckBox extends FlxSpriteGroup
 		}
 	}
 
-	function _drawBorderr(s:FlxSprite, color:FlxColor):Void
-	{
+	function _drawBorderr(s:FlxSprite, color:FlxColor):Void {
 		var w = s.frameWidth;
 		var h = s.frameHeight;
 		var p = s.pixels;
-		for (i in 0...w) { p.setPixel32(i, 0, color); p.setPixel32(i, h-1, color); }
-		for (j in 0...h) { p.setPixel32(0, j, color); p.setPixel32(w-1, j, color); }
+		for (i in 0...w) {
+			p.setPixel32(i, 0, color);
+			p.setPixel32(i, h - 1, color);
+		}
+		for (j in 0...h) {
+			p.setPixel32(0, j, color);
+			p.setPixel32(w - 1, j, color);
+		}
 		s.pixels = p;
 	}
 
-	function _drawCheck(s:FlxSprite, color:FlxColor):Void
-	{
+	function _drawCheck(s:FlxSprite, color:FlxColor):Void {
 		var p = s.pixels;
 		var w = s.frameWidth;
 		var h = s.frameHeight;
 		// Draw ✓ as two line segments
-		inline function px(ax:Int, ay:Int, bx:Int, by:Int):Void
-		{
-			var dx = bx - ax; var dy = by - ay;
+		inline function px(ax:Int, ay:Int, bx:Int, by:Int):Void {
+			var dx = bx - ax;
+			var dy = by - ay;
 			var steps = Std.int(Math.max(Math.abs(dx), Math.abs(dy)));
-			for (i in 0...steps + 1)
-			{
+			for (i in 0...steps + 1) {
 				var t = (steps == 0) ? 0.0 : i / steps;
 				var px2 = Std.int(ax + t * dx);
 				var py2 = Std.int(ay + t * dy);
@@ -142,20 +137,19 @@ class CoolCheckBox extends FlxSpriteGroup
 		s.pixels = p;
 	}
 
-	function _animateCheck(on:Bool):Void
-	{
-		if (_tween != null) _tween.cancel();
-		if (on)
-		{
+	function _animateCheck(on:Bool):Void {
+		if (_tween != null)
+			_tween.cancel();
+		if (on) {
 			_check.visible = true;
-			_check.alpha   = 0;
+			_check.alpha = 0;
 			_tween = FlxTween.globalManager.tween(_check, {alpha: 1.0}, 0.1, {ease: FlxEase.quartOut});
-		}
-		else
-		{
+		} else {
 			_tween = FlxTween.globalManager.tween(_check, {alpha: 0.0}, 0.08, {
 				ease: FlxEase.quartIn,
-				onComplete: function(_) { _check.visible = false; }
+				onComplete: function(_) {
+					_check.visible = false;
+				}
 			});
 		}
 	}
@@ -166,26 +160,26 @@ class CoolCheckBox extends FlxSpriteGroup
 
 	// ── Update ───────────────────────────────────────────────────────────────
 
-	override public function update(elapsed:Float):Void
-	{
+	override public function update(elapsed:Float):Void {
 		super.update(elapsed);
-		if (FlxG.mouse.justPressed)
-		{
+		if (FlxG.mouse.justPressed) {
 			var mx = FlxG.mouse.x;
 			var my = FlxG.mouse.y;
 			var totalW = BOX_SIZE + (_label != null ? 4 + _lw : 0);
-			if (mx >= x && mx <= x + totalW && my >= y && my <= y + HEIGHT)
-			{
+			if (mx >= x && mx <= x + totalW && my >= y && my <= y + HEIGHT) {
 				var newVal = !_checked;
 				checked = newVal;
-				if (callback != null) callback(newVal);
+				if (callback != null)
+					callback(newVal);
 			}
 		}
 	}
 
-	override public function destroy():Void
-	{
-		if (_tween != null) { _tween.cancel(); _tween = null; }
+	override public function destroy():Void {
+		if (_tween != null) {
+			_tween.cancel();
+			_tween = null;
+		}
 		callback = null;
 		super.destroy();
 	}
