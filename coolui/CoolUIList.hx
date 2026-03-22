@@ -10,10 +10,10 @@ import flixel.util.FlxColor;
 
 
 /**
- * CoolUIList — Reemplazo de `FlxUIList` sin flixel-ui.
+ * CoolUIList — Drop-in replacement for `FlxUIList`, no flixel-ui required.
  *
- * Lista scrolleable con filas seleccionables. Ideal para listas de
- * animaciones, capas, etc.
+ * Scrollable list with selectable rows. Great for animation lists,
+ * layer lists, etc.
  *
  * Uso:
  *
@@ -21,22 +21,22 @@ import flixel.util.FlxColor;
  *   list.setItems(["Idle", "Walk", "Run"]);
  *   list.onSelect = function(idx:Int, item:String) { trace(item); };
  *
- *   // Doble clic
+ *   // Double click
  *   list.onDoubleClick = function(idx:Int, item:String) { ... };
  *
- *   // Actualizar datos
+ *   // Update data
  *   list.setItems(newItems);
  *
- * Navegación con teclado cuando la lista tiene foco:
- *   ↑ / ↓ → mueve la selección
- *   Enter  → confirma (llama onSelect)
+ * Keyboard navigation when the list has focus:
+ *   ↑ / ↓ → moves selection
+ *   Enter  → confirm (calls onSelect)
  */
 class CoolUIList extends FlxSpriteGroup
 {
 	static inline var ROW_H    : Int = 18;
 	static inline var SCROLL_W : Int = 8;
 
-	// ── API pública ──────────────────────────────────────────────────────────
+	// ── Public API ──────────────────────────────────────────────────────────
 
 	public var onSelect      : Int -> String -> Void;
 	public var onDoubleClick : Int -> String -> Void;
@@ -47,7 +47,7 @@ class CoolUIList extends FlxSpriteGroup
 
 	var _items    : Array<String> = [];
 	var _selIdx   : Int = -1;
-	var _scroll   : Int = 0;        // primera fila visible
+	var _scroll   : Int = 0;        // first visible row
 	var _focused  : Bool = false;
 
 	var _w        : Int;
@@ -91,7 +91,7 @@ class CoolUIList extends FlxSpriteGroup
 
 	// ── API ──────────────────────────────────────────────────────────────────
 
-	/** Reemplaza todos los items y hace rebuild. */
+	/** Replaces all items and rebuilds. */
 	public function setItems(items:Array<String>):Void
 	{
 		_items  = items ?? [];
@@ -101,7 +101,7 @@ class CoolUIList extends FlxSpriteGroup
 		_updateScrollBar();
 	}
 
-	/** Añade un item al final. */
+	/** Appends an item. */
 	public function addItem(item:String):Void
 	{
 		_items.push(item);
@@ -109,7 +109,7 @@ class CoolUIList extends FlxSpriteGroup
 		_updateScrollBar();
 	}
 
-	/** Elimina el item en `idx`. */
+	/** Removes the item at `idx`. */
 	public function removeItemAt(idx:Int):Void
 	{
 		if (idx < 0 || idx >= _items.length) return;
@@ -127,7 +127,7 @@ class CoolUIList extends FlxSpriteGroup
 
 		_bg = new FlxSprite(0, 0);
 		_bg.makeGraphic(_w, _h, T.bgPanel);
-		// Borde
+		// Border
 		var brdC = FlxColor.fromInt(T.borderColor); brdC.alphaFloat = 0.7;
 		var p = _bg.pixels;
 		for (i in 0..._w) { p.setPixel32(i, 0, brdC); p.setPixel32(i, _h-1, brdC); }
@@ -209,7 +209,7 @@ class CoolUIList extends FlxSpriteGroup
 	{
 		super.update(elapsed);
 
-		// Scroll con rueda
+		// Mouse wheel scroll
 		var mx = FlxG.mouse.x; var my = FlxG.mouse.y;
 		var inBounds = mx >= x && mx <= x + _w && my >= y && my <= y + _h;
 
@@ -226,7 +226,7 @@ class CoolUIList extends FlxSpriteGroup
 		}
 		else if (FlxG.mouse.justPressed) _focused = false;
 
-		// Teclado
+		// Keyboard
 		if (_focused)
 		{
 			if (FlxG.keys.justPressed.UP    && _selIdx > 0)

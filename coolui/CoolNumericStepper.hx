@@ -10,7 +10,7 @@ import flixel.util.FlxColor;
 
 
 /**
- * CoolNumericStepper — Reemplazo de `FlxUINumericStepper` sin flixel-ui.
+ * CoolNumericStepper — Drop-in replacement for `FlxUINumericStepper`, no flixel-ui required.
  *
  * API compatible:
  *
@@ -18,11 +18,11 @@ import flixel.util.FlxColor;
  *   s.value_change = function(v:Float) { trace(v); };
  *
  * Controles:
- *  • Clic en ▲ / ▼     → incrementa / decrementa `step`.
- *  • Rueda del ratón    → incrementa / decrementa cuando el cursor está encima.
- *  • Doble clic label   → abre CoolInputText inline para escribir el valor.
- *  • Mantener Shift     → multiplica el step por 10.
- *  • Mantener Ctrl      → divide el step entre 10.
+ *  • Click ▲ / ▼     → increment / decrement by `step`.
+ *  • Mouse wheel    → increment / decrement when cursor is over the widget.
+ *  • Double-click label → opens inline CoolInputText for direct value entry.
+ *  • Hold Shift     → multiplies step by 10.
+ *  • Hold Ctrl      → divides step by 10.
  */
 class CoolNumericStepper extends FlxSpriteGroup
 {
@@ -31,9 +31,9 @@ class CoolNumericStepper extends FlxSpriteGroup
 	static inline var BTN_W  : Int = 16;
 	static inline var HEIGHT : Int = 18;
 
-	// ── Propiedades públicas ─────────────────────────────────────────────────
+	// ── Public properties ─────────────────────────────────────────────────
 
-	/** Callback cuando el valor cambia: `value_change(newValue)`. */
+	/** Callback fired when the value changes: `value_change(newValue)`. */
 	public var value_change : Float -> Void;
 
 	public var value(get, set)   : Float;
@@ -42,7 +42,7 @@ class CoolNumericStepper extends FlxSpriteGroup
 	public var maxValue          : Float;
 	public var decimals          : Int;
 
-	// ── Estado ───────────────────────────────────────────────────────────────
+	// ── State ───────────────────────────────────────────────────────────────
 
 	var _value  : Float;
 	var _w      : Int;
@@ -60,14 +60,14 @@ class CoolNumericStepper extends FlxSpriteGroup
 	// ── Constructor ──────────────────────────────────────────────────────────
 
 	/**
-	 * @param px        Posición X
-	 * @param py        Posición Y
-	 * @param stepSize  Cuánto suma/resta cada clic
-	 * @param value     Valor inicial
-	 * @param min       Valor mínimo
-	 * @param max       Valor máximo
-	 * @param decimals  Decimales a mostrar (0 = entero)
-	 * @param width     Ancho total (por defecto 80)
+	 * @param px        X position
+	 * @param py        Y position
+	 * @param stepSize  Amount added/subtracted per click
+	 * @param value     Initial value
+	 * @param min       Minimum value
+	 * @param max       Maximum value
+	 * @param decimals  Decimal places to display (0 = integer)
+	 * @param width     Total width (default 80)
 	 */
 	public function new(px:Float = 0, py:Float = 0,
 	                    stepSize:Float = 1, value:Float = 0,
@@ -105,18 +105,18 @@ class CoolNumericStepper extends FlxSpriteGroup
 		var T = coolui.CoolUITheme.current;
 		var labelW = _w - BTN_W * 2;
 
-		// Fondo label
+		// Background label
 		_bg = new FlxSprite(BTN_W, 0);
 		_bg.makeGraphic(labelW, HEIGHT, T.bgPanelAlt);
 		add(_bg);
 
-		// Botón ▼
+		// ▼ button
 		_btnDn = new _StepBtn(0, 0, BTN_W, HEIGHT, "◀", T);
 		_btnDn.scrollFactor.set();
 		_btnDn.onClick = function() step(-1);
 		add(_btnDn);
 
-		// Botón ▲
+		// ▲ button
 		_btnUp = new _StepBtn(_w - BTN_W, 0, BTN_W, HEIGHT, "▶", T);
 		_btnUp.scrollFactor.set();
 		_btnUp.onClick = function() step(1);
@@ -130,7 +130,7 @@ class CoolNumericStepper extends FlxSpriteGroup
 		add(_label);
 	}
 
-	// ── Lógica ───────────────────────────────────────────────────────────────
+	// ── Logic ───────────────────────────────────────────────────────────────
 
 	public function step(dir:Int):Void
 	{
@@ -158,7 +158,7 @@ class CoolNumericStepper extends FlxSpriteGroup
 	{
 		if (decimals <= 0) return Std.string(Std.int(v));
 		var s = Std.string(Math.round(v * Math.pow(10, decimals)) / Math.pow(10, decimals));
-		// Asegurar mínimo de decimals dígitos después del punto
+		// Ensure minimum decimal digits after the dot
 		var dotIdx = s.indexOf(".");
 		if (dotIdx < 0) { s += "."; dotIdx = s.length - 1; }
 		while (s.length - dotIdx - 1 < decimals) s += "0";
@@ -176,7 +176,7 @@ class CoolNumericStepper extends FlxSpriteGroup
 	{
 		super.update(elapsed);
 
-		// Doble clic sobre el label → edición inline (detección manual)
+		// Double-click on label → inline edit mode (manual detection)
 		if (FlxG.mouse.justPressed && !_editing)
 		{
 			var mx = FlxG.mouse.x;
@@ -190,7 +190,7 @@ class CoolNumericStepper extends FlxSpriteGroup
 			}
 		}
 
-		// Rueda encima del widget
+		// Mouse wheel over widget
 		if (FlxG.mouse.wheel != 0)
 		{
 			var mx = FlxG.mouse.x;
@@ -199,7 +199,7 @@ class CoolNumericStepper extends FlxSpriteGroup
 				step(FlxG.mouse.wheel > 0 ? 1 : -1);
 		}
 
-		// Confirmar edición con Enter
+		// Confirm edit on Enter
 		if (_editing && (FlxG.keys.justPressed.ENTER || FlxG.keys.justPressed.ESCAPE))
 			_endEdit(FlxG.keys.justPressed.ENTER);
 	}
@@ -277,7 +277,7 @@ private class _StepBtn extends FlxSpriteGroup
 		_bg.alpha = hover ? 1.4 : 1.0;
 		if (hover && FlxG.mouse.justPressed && onClick != null) onClick();
 
-		// Mantener presionado: dispara rápido después de 400ms
+		// Hold pressed: fires rapidly after 400ms
 		if (hover && FlxG.mouse.pressed)
 		{
 			@:privateAccess if (_holdTimer >= 0.4 && _holdRepeat >= 0.08)

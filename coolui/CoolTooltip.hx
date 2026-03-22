@@ -12,27 +12,25 @@ import flixel.util.FlxColor;
 
 
 /**
- * CoolTooltip — Reemplazo de `FlxUITooltip` sin flixel-ui.
+ * CoolTooltip — Drop-in replacement for `FlxUITooltip`, no flixel-ui required.
  *
- * Tooltip flotante que sigue al cursor. Se gestiona como singleton en
- * `CoolTooltipManager`; los widgets lo invocan vía su API estática.
+ * Floating tooltip that follows the cursor. Managed as a singleton;
+ * widgets invoke it via the static API.
  *
- * Uso directo:
+ * Direct usage:
  *
- *   CoolTooltip.show("Texto del tooltip");   // aparece junto al cursor
+ *   CoolTooltip.show("My tooltip text");   // appears near the cursor
  *   CoolTooltip.hide();
  *
- * O mediante `CoolTooltipTarget` para que el tooltip aparezca al hacer
- * hover sobre un sprite:
+ * Or use `CoolTooltipTarget` for automatic hover detection on a sprite:
  *
  *   var target = new CoolTooltipTarget(mySprite, "Mi tooltip", 120, 16);
  *   add(target);
  *
- * Compatibilidad con FlxUITooltipStyle: se mantiene el typedef para que
- * el código que lo usaba no rompa.
+ * FlxUITooltipStyle compatibility: the typedef is kept so existing code continues to compile.
  */
 
-// ── Tipos de compatibilidad ───────────────────────────────────────────────────
+// ── Compatibility types ───────────────────────────────────────────────────
 
 typedef CoolTooltipStyle = {
 	?width     : Float,
@@ -41,7 +39,7 @@ typedef CoolTooltipStyle = {
 	?bodySize  : Int,
 }
 
-// ── Clase principal ───────────────────────────────────────────────────────────
+// ── Main class ───────────────────────────────────────────────────────────
 
 class CoolTooltip extends FlxSpriteGroup
 {
@@ -74,7 +72,7 @@ class CoolTooltip extends FlxSpriteGroup
 		}
 	}
 
-	// ── Instancia ─────────────────────────────────────────────────────────
+	// ── Instance ─────────────────────────────────────────────────────────
 
 	var _bg      : FlxSprite;
 	var _text    : FlxText;
@@ -94,7 +92,7 @@ class CoolTooltip extends FlxSpriteGroup
 		var tw = (style?.width  ?? 0.0) > 0 ? Std.int(style.width)  : 160;
 		var fs = (style?.bodySize ?? 0) > 0 ? style.bodySize : 8;
 
-		// Reconstruir si el texto cambió
+		// Rebuild if text changed
 		_rebuild(text, tw, fs, T);
 
 		visible = true;
@@ -129,7 +127,7 @@ class CoolTooltip extends FlxSpriteGroup
 
 		_bg = new FlxSprite(0, 0);
 		_bg.makeGraphic(tw, th, T.bgPanel);
-		// Borde accent
+		// Border accent
 		var brdC = FlxColor.fromInt(T.accent); brdC.alphaFloat = 0.6;
 		var p = _bg.pixels;
 		for (i in 0...tw) { p.setPixel32(i, 0, brdC); p.setPixel32(i, th-1, brdC); }
@@ -148,11 +146,11 @@ class CoolTooltip extends FlxSpriteGroup
 		super.update(elapsed);
 		if (!_showing || !visible) return;
 
-		// Seguir el cursor
+		// Follow the cursor
 		var nx = FlxG.mouse.screenX + OFFSET_X;
 		var ny = FlxG.mouse.screenY + OFFSET_Y;
 
-		// No salirse de pantalla
+		// Keep within screen bounds
 		if (_bg != null)
 		{
 			if (nx + _bg.frameWidth  > FlxG.width)  nx = FlxG.mouse.screenX - _bg.frameWidth  - OFFSET_X;
@@ -170,7 +168,7 @@ class CoolTooltip extends FlxSpriteGroup
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// CoolTooltipTarget — añade comportamiento de tooltip a cualquier sprite
+// CoolTooltipTarget — adds tooltip behaviour to any sprite
 // ─────────────────────────────────────────────────────────────────────────────
 
 class CoolTooltipTarget extends FlxSpriteGroup

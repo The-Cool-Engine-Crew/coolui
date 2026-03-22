@@ -11,17 +11,17 @@ import flixel.util.FlxColor;
 
 
 /**
- * CoolDropDown — Reemplazo de `FlxUIDropDownMenu` sin flixel-ui.
+ * CoolDropDown — Drop-in replacement for `FlxUIDropDownMenu`, no flixel-ui required.
  *
  * API compatible:
  *
- *   // Con array de strings
+ *   // From a string array
  *   var dd = new CoolDropDown(x, y,
  *     CoolDropDown.makeStrIdLabelArray(["Opción A", "Opción B"]),
  *     function(id:String) { trace(id); }
  *   );
  *
- *   // Con header personalizado
+ *   // With a custom header
  *   var dd = new CoolDropDown(x, y, data, cb,
  *     new CoolDropDown.DropDownHeader("Selecciona...", new CoolDropDown.DropDownHeaderStyle())
  *   );
@@ -29,28 +29,28 @@ import flixel.util.FlxColor;
  *   dd.selectedLabel   // texto de la opción activa
  *   dd.selectedId      // id de la opción activa
  *
- * El dropdown se abre hacia abajo. Si no cabe en pantalla, se abre hacia arriba.
- * Clic fuera del dropdown lo cierra.
+ * The dropdown opens downward. If it doesn't fit, it opens upward.
+ * Clicking outside closes the dropdown.
  *
- * Nota: a diferencia de FlxUIDropDownMenu, la lista flotante se gestiona con
- * `FlxG.state.add/remove` para que quede encima de todos los demás elementos.
- * Si lo usas en un SubState, pasa el grupo contenedor al constructor o llama
- * `setStateTarget(grupo)` antes de añadir al estado.
+ * Note: unlike FlxUIDropDownMenu, the floating list is managed via
+ * `FlxG.state.add/remove` so it always renders on top.
+ * If used inside a SubState, pass the container group to the constructor
+ * or call `setStateTarget(group)` before adding to the state.
  */
-/** Estructura de datos de cada opción. Compatible con StrNameLabel de flixel-ui. */
+/** Data structure for each option. Compatible with flixel-ui's StrNameLabel. */
 typedef DropDownData = { name:String, label:String }
 
-/** Cabecera del dropdown (label del botón cerrado). */
+/** Dropdown header (label shown when closed). */
 typedef DropDownHeader = { text:String, ?style:DropDownHeaderStyle }
 typedef DropDownHeaderStyle = { ?fontSize:Int, ?color:Int }
 
 class CoolDropDown extends FlxSpriteGroup
 {
-	// ── Tipos públicos ───────────────────────────────────────────────────────
+	// ── Public types ───────────────────────────────────────────────────────
 
 	public static inline var ROW_H : Int = 18;
 
-	// ── Propiedades públicas ─────────────────────────────────────────────────
+	// ── Public properties ─────────────────────────────────────────────────
 
 	/** Callback al seleccionar: `callback(id:String)`. */
 	public var callback : String -> Void;
@@ -70,19 +70,19 @@ class CoolDropDown extends FlxSpriteGroup
 	var _btnArrow : FlxText;
 
 	var _list        : _DropList;
-	var _listTarget  : FlxGroup; // grupo donde se monta la lista flotante
+	var _listTarget  : FlxGroup; // group where the floating list is mounted
 
 	// ── Constructor ──────────────────────────────────────────────────────────
 
 	/**
 	 * @param px       X
 	 * @param py       Y
-	 * @param data     Array de {name, label}
-	 * @param callback Llamado con el `name` del item seleccionado
-	 * @param header   Texto/estilo del botón cerrado (opcional)
-	 * @param _unused1 Ignorado (compat FlxUIDropDownMenu)
-	 * @param _unused2 Ignorado (compat FlxUIDropDownMenu)
-	 * @param width    Ancho (por defecto 120)
+	 * @param data     Array of {name, label}
+	 * @param callback Called with the selected item's `name`
+	 * @param header   Closed-button text/style (optional)
+	 * @param _unused1 Ignored (FlxUIDropDownMenu compat)
+	 * @param _unused2 Ignored (FlxUIDropDownMenu compat)
+	 * @param width    Width (default 120)
 	 */
 	public function new(px:Float = 0, py:Float = 0,
 	                    data:Array<DropDownData>,
@@ -99,11 +99,11 @@ class CoolDropDown extends FlxSpriteGroup
 		_build();
 	}
 
-	// ── Helpers estáticos ────────────────────────────────────────────────────
+	// ── Static helpers ────────────────────────────────────────────────────
 
 	/**
-	 * Convierte un array de strings a la estructura de datos del dropdown.
-	 * Compatible con `FlxUIDropDownMenu.makeStrIdLabelArray`.
+	 * Converts a string array to the dropdown data structure.
+	 * Compatible with `FlxUIDropDownMenu.makeStrIdLabelArray`.
 	 */
 	public static function makeStrIdLabelArray(arr:Array<String>, useIndexAsId:Bool = false)
 		: Array<DropDownData>
@@ -141,8 +141,8 @@ class CoolDropDown extends FlxSpriteGroup
 	}
 
 	/**
-	 * Reemplaza todos los items del dropdown en caliente.
-	 * Compat con FlxUIDropDownMenu (que no tenía este método pero se esperaba).
+	 * Replaces all dropdown items at runtime.
+	 * FlxUIDropDownMenu compat (the method was expected but didn't exist).
 	 */
 	public function setData(items:Array<DropDownData>):Void
 	{
@@ -165,7 +165,7 @@ class CoolDropDown extends FlxSpriteGroup
 
 		var brd = FlxColor.fromInt(T.borderColor);
 		brd.alphaFloat = 0.7;
-		_drawBorder(_btnBg, brd);
+		_drawBorderr(_btnBg, brd);
 
 		_btnLabel = new FlxText(4, 1, _w - 20, _header.text, 8);
 		_btnLabel.color = FlxColor.fromInt(T.textPrimary);
@@ -178,7 +178,7 @@ class CoolDropDown extends FlxSpriteGroup
 		add(_btnArrow);
 	}
 
-	function _drawBorder(s:FlxSprite, c:FlxColor):Void
+	function _drawBorderr(s:FlxSprite, c:FlxColor):Void
 	{
 		var w = s.frameWidth; var h = s.frameHeight;
 		var p = s.pixels;
@@ -193,7 +193,7 @@ class CoolDropDown extends FlxSpriteGroup
 	{
 		super.update(elapsed);
 
-		// Clic en el botón del dropdown
+		// Click on the dropdown button
 		if (FlxG.mouse.justPressed)
 		{
 			var mx = FlxG.mouse.x; var my = FlxG.mouse.y;
@@ -211,7 +211,7 @@ class CoolDropDown extends FlxSpriteGroup
 		}
 	}
 
-	// ── Lista flotante ───────────────────────────────────────────────────────
+	// ── Floating list ───────────────────────────────────────────────────────
 
 	function _openList():Void
 	{
@@ -230,7 +230,7 @@ class CoolDropDown extends FlxSpriteGroup
 			if (callback != null) callback(_data[idx].name);
 		});
 
-		// Añadir al estado / grupo más alto disponible
+		// Add to the highest available state / group
 		var target:FlxGroup = (_listTarget != null) ? _listTarget : FlxG.state;
 		target.add(_list);
 	}
@@ -244,7 +244,7 @@ class CoolDropDown extends FlxSpriteGroup
 		_list = null;
 	}
 
-	/** Establece el grupo donde se montará la lista flotante. */
+	/** Sets the group where the floating list will be mounted. */
 	public function setStateTarget(g:FlxGroup):Void
 		_listTarget = g;
 
@@ -257,7 +257,7 @@ class CoolDropDown extends FlxSpriteGroup
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// _DropList — lista flotante renderizada como sprite group
+// _DropList — floating list rendered as a sprite group
 // ─────────────────────────────────────────────────────────────────────────────
 
 private class _DropList extends FlxSpriteGroup
@@ -286,12 +286,12 @@ private class _DropList extends FlxSpriteGroup
 		var visible = Std.int(Math.min(_data.length, MAX_VISIBLE));
 		var h = visible * CoolDropDown.ROW_H;
 
-		// Fondo
+		// Background
 		var bg = new FlxSprite(0, 0);
 		bg.makeGraphic(_w, h, T.bgPanel);
 		add(bg);
 
-		// Borde
+		// Border
 		var brdCol = FlxColor.fromInt(T.borderColor);
 		brdCol.alphaFloat = 0.9;
 		var bw = _w; var bh = h;

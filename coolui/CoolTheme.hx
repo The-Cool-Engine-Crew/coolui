@@ -1,8 +1,8 @@
 package coolui;
 
 /**
- * CoolTheme — Estructura de datos de un tema visual.
- * Todos los colores son enteros ARGB (0xFFRRGGBB).
+ * CoolTheme — Visual theme data structure.
+ * All colours are ARGB integers (0xFFRRGGBB).
  */
 typedef CoolTheme = {
 	var bgDark        : Int;

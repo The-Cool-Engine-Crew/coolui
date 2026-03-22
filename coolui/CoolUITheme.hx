@@ -3,17 +3,17 @@ package coolui;
 import coolui.CoolTheme;
 
 /**
- * CoolUITheme — Sistema de theming standalone para la librería CoolUI.
+ * CoolUITheme — Standalone theming system for the CoolUI library.
  *
- * No depende del engine. Para conectarlo con `EditorTheme` del engine,
- * llama `CoolUITheme.sync(myThemeData)` cada vez que el tema cambie.
+ * Has no engine dependency. To connect it to the engine's `EditorTheme`,
+ * call `CoolUITheme.syncFromDynamic(theme)` whenever the theme changes.
  *
  * Ejemplo de integración en el engine:
  *
- *   // En EditorTheme.apply() / EditorTheme.load():
+ *   // In EditorTheme.apply() / EditorTheme.load():
  *   CoolUITheme.syncFromEngine(coolui.CoolUITheme.current);
  *
- *   // Donde syncFromEngine es:
+ *   // Where syncFromEngine is:
  *   public static function syncFromEngine(t:Dynamic):Void {
  *     CoolUITheme.set({
  *       bgDark:        t.bgDark,
@@ -36,7 +36,7 @@ import coolui.CoolTheme;
 
 class CoolUITheme
 {
-	// ── Tema activo ──────────────────────────────────────────────────────────
+	// ── Active theme ──────────────────────────────────────────────────────────
 
 	public static var current(get, never) : CoolTheme;
 
@@ -44,14 +44,14 @@ class CoolUITheme
 
 	static function get_current() : CoolTheme return _current;
 
-	// ── Listener opcional para widgets que necesiten repintarse ──────────────
+	// ── Optional listener for widgets that need to repaint ──────────────
 
-	/** Llamado cada vez que se cambia el tema con `set()`. */
+	/** Called whenever the theme is changed via `set()`. */
 	public static var onChange : Void -> Void;
 
-	// ── API pública ──────────────────────────────────────────────────────────
+	// ── Public API ──────────────────────────────────────────────────────────
 
-	/** Aplica un nuevo tema. Llama a `onChange` si está definido. */
+	/** Applies a new theme and fires `onChange` if set. */
 	public static function set(theme:CoolTheme):Void
 	{
 		_current = theme;
@@ -59,8 +59,8 @@ class CoolUITheme
 	}
 
 	/**
-	 * Sincroniza desde un Dynamic (p.ej. coolui.CoolUITheme.current del engine).
-	 * Los campos deben llamarse igual que los de CoolTheme.
+	 * Syncs from a Dynamic object (e.g. the engine's EditorTheme.current).
+	 * Field names must match CoolTheme's.
 	 */
 	public static function syncFromDynamic(t:Dynamic):Void
 	{
@@ -81,13 +81,13 @@ class CoolUITheme
 		});
 	}
 
-	// ── Presets integrados ───────────────────────────────────────────────────
+	// ── Built-in presets ───────────────────────────────────────────────────
 
 	public static function applyDark():Void    set(_defaultDark());
 	public static function applyNeon():Void    set(_neon());
 	public static function applyLight():Void   set(_light());
 
-	// ── Privados ─────────────────────────────────────────────────────────────
+	// ── Private helpers ─────────────────────────────────────────────────────────────
 
 	static function _int(t:Dynamic, field:String, fallback:Int):Int
 	{

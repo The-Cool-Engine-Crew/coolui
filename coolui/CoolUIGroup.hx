@@ -3,25 +3,25 @@ package coolui;
 import flixel.group.FlxSpriteGroup;
 
 /**
- * CoolUIGroup — Reemplazo de `FlxUIGroup`.
+ * CoolUIGroup — Drop-in replacement for `FlxUIGroup`.
  *
- * En flixel-ui, `FlxUIGroup` era un `FlxSpriteGroup` con la interfaz `IFlxUI`
- * para participar en el bus de eventos. Aquí es simplemente un
- * `FlxSpriteGroup` con un campo `name` para que `CoolTabMenu` identifique
- * cada panel de pestaña.
+ * In flixel-ui, `FlxUIGroup` was a `FlxSpriteGroup` implementing `IFlxUI`
+ * to participate in the event bus. Here it is simply a
+ * `FlxSpriteGroup` with a `name` field so `CoolTabMenu` can identify
+ * each tab panel.
  *
- * Uso (idéntico al anterior):
+ * Usage (identical to before):
  *
  *   var tab = new CoolUIGroup();
  *   tab.add(new CoolInputText(...));
  *   tabMenu.addGroup(tab);
  *
- * Si necesitas hacer scroll del contenido, ajusta `scrollFactor` en los
- * hijos o usa el parámetro `scrollFactor` del constructor.
+ * To scroll the content, adjust `scrollFactor` on children
+ * or use the constructor's `scrollFactor` parameter.
  */
 class CoolUIGroup extends FlxSpriteGroup
 {
-	/** Nombre que usa `CoolTabMenu` para asociar el grupo a su pestaña. */
+	/** Name used by `CoolTabMenu` to match this group to its tab. */
 	public var name:String = "";
 
 	public function new(x:Float = 0, y:Float = 0)

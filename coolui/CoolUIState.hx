@@ -3,22 +3,22 @@ package coolui;
 import flixel.FlxState;
 
 /**
- * CoolUIState — Reemplazo de FlxUIState sin dependencia de flixel-ui.
+ * CoolUIState — Drop-in replacement for FlxUIState, no flixel-ui required.
  *
- * Extiende FlxState y expone transIn / transOut como Dynamic para
- * compatibilidad con estados que los asignan a null (TitleState, PlayState…).
+ * Extends FlxState and exposes transIn / transOut as Dynamic for
+ * compatibility with states that assign them to null (TitleState, PlayState…).
  */
 class CoolUIState extends FlxState
 {
 	/**
-	 * Transición de entrada. Asigna null para desactivarla.
-	 * Compatible con FlxTransitionableState.transIn.
+	 * Entry transition. Assign null to disable it.
+	 * Compatible with FlxTransitionableState.transIn.
 	 */
 	public var transIn  : Dynamic = null;
 
 	/**
-	 * Transición de salida. Asigna null para desactivarla.
-	 * Compatible con FlxTransitionableState.transOut.
+	 * Exit transition. Assign null to disable it.
+	 * Compatible with FlxTransitionableState.transOut.
 	 */
 	public var transOut : Dynamic = null;
 }

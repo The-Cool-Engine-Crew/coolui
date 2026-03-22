@@ -7,25 +7,24 @@ import openfl.geom.Point;
 import openfl.geom.Rectangle;
 
 /**
- * Cool9Slice — Reemplazo de `FlxUI9SliceSprite` sin flixel-ui.
+ * Cool9Slice — Drop-in replacement for `FlxUI9SliceSprite`, no flixel-ui required.
  *
- * Renderiza un bitmap usando la técnica de los 9 slices: las esquinas se
- * mantienen sin escalar, los bordes escalan en un solo eje y el centro
- * escala en los dos ejes.
+ * Renders a bitmap using 9-slice scaling: corners stay unscaled,
+ * edges scale on one axis, and the centre scales on both axes.
  *
  * Uso:
  *
- *   // Desde un asset
+ *   // From an asset
  *   var s = new Cool9Slice(x, y, "assets/images/panel.png",
  *                          new openfl.geom.Rectangle(8, 8, 8, 8),
  *                          200, 100);
  *
- *   // Redimensionar después
+ *   // Resize afterwards
  *   s.resize(300, 150);
  *
- * @param sliceRect  Define los cortes: x/y = tamaño de la esquina superior-izquierda,
- *                   width/height = tamaño de la esquina inferior-derecha.
- *                   Si es null se usa un corte de 1/3 en cada dimensión.
+ * @param sliceRect  Defines the cut points: x/y = top-left corner size,
+ *                   width/height = bottom-right corner size.
+ *                   If null, defaults to 1/3 of the source in each dimension.
  */
 class Cool9Slice extends FlxSprite
 {
@@ -37,10 +36,10 @@ class Cool9Slice extends FlxSprite
 	/**
 	 * @param px        X
 	 * @param py        Y
-	 * @param bitmapOrPath  BitmapData o ruta al asset (String)
-	 * @param slice     Rectángulo de corte 9-slice
-	 * @param w         Ancho de destino
-	 * @param h         Alto de destino
+	 * @param bitmapOrPath  BitmapData or asset path (String)
+	 * @param slice     9-slice cut rectangle
+	 * @param w         Target width
+	 * @param h         Target height
 	 */
 	public function new(px:Float = 0, py:Float = 0,
 	                    bitmapOrPath:Dynamic,
@@ -61,14 +60,14 @@ class Cool9Slice extends FlxSprite
 
 		if (_srcBmp == null)
 		{
-			// Fallback: rectángulo de color sólido
+			// Fallback: solid colour rectangle
 			_srcBmp = new BitmapData(16, 16, false, 0xFF444466);
 		}
 
 		_tw = (w > 0) ? w : 100;
 		_th = (h > 0) ? h : 100;
 
-		// Slice por defecto: 1/3 del origen en cada esquina
+		// Default slice: 1/3 of source size per corner
 		_slice = slice ?? new Rectangle(
 			Std.int(_srcBmp.width  / 3), Std.int(_srcBmp.height / 3),
 			Std.int(_srcBmp.width  / 3), Std.int(_srcBmp.height / 3)
@@ -77,7 +76,7 @@ class Cool9Slice extends FlxSprite
 		_render();
 	}
 
-	/** Redimensiona el sprite y re-renderiza los 9 slices. */
+	/** Resizes the sprite and re-renders the 9 slices. */
 	public function resize(w:Float, h:Float):Void
 	{
 		_tw = Std.int(w);
@@ -95,17 +94,17 @@ class Cool9Slice extends FlxSprite
 		var cr = Std.int(_slice.width);
 		var cb = Std.int(_slice.height);
 
-		// Ancho/alto del centro de la fuente
+		// Source centre width/height
 		var srcCW = sw - cx - cr;
 		var srcCH = sh - cy - cb;
 
-		// Ancho/alto del centro en destino
+		// Destination centre width/height
 		var dstCW = _tw - cx - cr;
 		var dstCH = _th - cy - cb;
 
 		var dst = new BitmapData(_tw, _th, true, 0x00000000);
 
-		// ── Las 9 regiones ────────────────────────────────────────────────
+		// ── The 9 regions ────────────────────────────────────────────────
 		// top-left corner
 		_blit(dst, _srcBmp, 0,       0,       cx,    cy,    0,       0,       1,       1);
 		// top-right corner

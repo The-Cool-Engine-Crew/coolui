@@ -1,7 +1,6 @@
 package coolui;
 
 import coolui.CoolTheme;
-
 import flixel.FlxG;
 import flixel.FlxSprite;
 import flixel.group.FlxSpriteGroup;
@@ -10,48 +9,38 @@ import flixel.tweens.FlxEase;
 import flixel.tweens.FlxTween;
 import flixel.util.FlxColor;
 
-
-
 /**
- * CoolTabMenu — Tab menu 100 % nativo, sin dependencia de flixel-ui.
+ * CoolTabMenu — 100% native tabbed panel, no flixel-ui required.
  *
- * Reemplaza tanto `FlxUITabMenu` como el `CoolTabMenu` que estaba en
- * `funkin.debug` (que extendía `FlxUITabMenu`). Mueve este archivo a
- * `source/funkin/ui/` y actualiza los imports.
- *
- * API compatible con la versión anterior:
- *
+ * Uso:
  *   var menu = new CoolTabMenu(null, [
- *     {name:"tab1", label:"Propiedades"},
- *     {name:"tab2", label:"Animaciones"},
+ *     {name:"song",    label:"Song"},
+ *     {name:"section", label:"Section"},
  *   ], true);
  *   menu.resize(300, 400);
- *   menu.addGroup(myGroup);
- *   menu.selected_tab_id = "tab1";
+ *   add(menu);
  *
- * Diferencias respecto a la versión anterior:
- *  • NO extiende FlxUITabMenu → cero dependencias de flixel-ui.
- *  • `addGroup()` recibe un `CoolUIGroup` (en vez de `FlxUIGroup`).
- *    Si pasas `FlxSpriteGroup` normal también funciona por duck-typing.
- *  • `selected_tab_id` es una propiedad con setter (antes era field de FlxUITabMenu).
+ *   var tab = new CoolUIGroup();
+ *   tab.name = "song";
+ *   tab.add(new CoolInputText(10, 10, 200, "hello"));
+ *   menu.addGroup(tab);
+ *   menu.selected_tab_id = "song";
  */
 class CoolTabMenu extends FlxSpriteGroup
 {
-	// ── Constantes de diseño ────────────────────────────────────────────────
-
 	public static inline var TAB_BAR_H  : Int   = 28;
 	public static inline var ACCENT_BAR : Int   = 2;
 	public static inline var TAB_FONT   : Int   = 10;
 	static         inline var FADE_TIME : Float = 0.08;
 
-	// ── Estado interno ──────────────────────────────────────────────────────
+	// ── State ───────────────────────────────────────────────────────────────
 
 	var _tabDefs  : Array<{name:String, label:String}>;
-	var _groups   : Map<String, FlxSpriteGroup> = new Map();
+	var _groups   : Map<String, FlxSpriteGroup> = [];
 	var _pw       : Int = 300;
 	var _ph       : Int = 400;
 
-	// Chrome
+	// Chrome sprites
 	var _tabBarBg   : FlxSprite;
 	var _tabBarLine : FlxSprite;
 	var _bodyBg     : FlxSprite;
@@ -60,11 +49,10 @@ class CoolTabMenu extends FlxSpriteGroup
 
 	var _selectedId : String = "";
 
-	// ── Propiedad selected_tab_id ───────────────────────────────────────────
+	// ── selected_tab_id ──────────────────────────────────────────────────────
 
-	public var selected_tab_id(get, set):String;
-
-	function get_selected_tab_id():String  return _selectedId;
+	public var selected_tab_id(get, set) : String;
+	function get_selected_tab_id()  return _selectedId;
 	function set_selected_tab_id(id:String):String
 	{
 		if (_selectedId == id) return id;
@@ -75,14 +63,8 @@ class CoolTabMenu extends FlxSpriteGroup
 		return id;
 	}
 
-	// ── Constructor ─────────────────────────────────────────────────────────
+	// ── Constructor ──────────────────────────────────────────────────────────
 
-	/**
-	 * @param back_    Ignorado (existía en FlxUITabMenu para el fondo). Puede ser null.
-	 * @param tabs     Lista de tabs: [{name:"id", label:"Texto visible"}, ...]
-	 * @param wrap     Si true, al llegar al último tab vuelve al primero con flechas.
-	 *                 (reservado para futura implementación; actualmente no afecta).
-	 */
 	public function new(?back_:FlxSprite, tabs:Array<{name:String, label:String}>, wrap:Bool = true)
 	{
 		super();
@@ -92,55 +74,49 @@ class CoolTabMenu extends FlxSpriteGroup
 		_buildChrome();
 	}
 
-	// ── API pública ─────────────────────────────────────────────────────────
+	// ── Public API ──────────────────────────────────────────────────────────
 
-	/** Cambia el tamaño del panel. Llama después de new() si necesitas un tamaño distinto. */
 	public function resize(w:Float, h:Float):Void
 	{
 		_pw = Std.int(w);
 		_ph = Std.int(h);
-		_buildChrome();
-		_repositionGroups();
+		_rebuildChrome();
 	}
 
 	/**
-	 * Asocia un grupo de widgets a la pestaña cuyo `name` coincide con
-	 * `group.name`. Si el grupo no tiene nombre asignado, se usa el orden
-	 * de llamada (primer addGroup → primera pestaña, etc.).
+	 * Associates a widget group with the tab whose `name` matches.
+	 * If the group has no name, tabs are assigned by insertion order.
 	 */
 	public function addGroup(group:FlxSpriteGroup):Void
 	{
-		// Intentar nombre via duck-typing
 		var gName:String = "";
-		try { gName = Reflect.field(group, "name") ?? ""; } catch (_:Dynamic) {}
+		try { gName = (Reflect.field(group, "name") : String) ?? ""; } catch (_:Dynamic) {}
 
-		// Si no tiene nombre, asignamos por orden de inserción
 		if (gName == "")
 		{
 			var idx = Lambda.count(_groups);
-			if (idx < _tabDefs.length)
-				gName = _tabDefs[idx].name;
+			if (idx < _tabDefs.length) gName = _tabDefs[idx].name;
 		}
-
 		if (gName == "") return;
 
 		_groups.set(gName, group);
 
-		// Posicionar debajo de la barra de tabs
-		_placeGroup(group);
-		add(group);
+		// ── LOCAL COORDINATES ──────────────────────────────────────────────
+		// The group is a child of this FlxSpriteGroup, so x/y are
+		// RELATIVE to the parent origin, not world coordinates.
+		group.x = 0;
+		group.y = TAB_BAR_H + 1;
 
-		// Visibilidad inicial
 		group.visible = (gName == _selectedId);
+		add(group);
 	}
 
-	/** Refresca los colores del chrome cuando cambia el tema. */
 	public function refresh():Void
 	{
-		_buildChrome();
+		_rebuildChrome();
 	}
 
-	// ── Gestión de grupos ───────────────────────────────────────────────────
+	// ── Group visibility ────────────────────────────────────────────────
 
 	function _syncGroupVisibility():Void
 	{
@@ -148,37 +124,24 @@ class CoolTabMenu extends FlxSpriteGroup
 			group.visible = (id == _selectedId);
 	}
 
-	function _placeGroup(group:FlxSpriteGroup):Void
-	{
-		group.x = x;
-		group.y = y + TAB_BAR_H + 1;
-		// Los hijos usan scrollFactor del padre; si quieres fijarlos en pantalla
-		// usa scrollFactor.set(0,0) en cada widget del grupo.
-	}
+	// ── Chrome ───────────────────────────────────────────────────────────────
 
-	function _repositionGroups():Void
-	{
-		for (group in _groups)
-			_placeGroup(group);
-	}
-
-	// ── Chrome ──────────────────────────────────────────────────────────────
-
+	/**
+	 * Initial build — groups don't exist yet, chrome only.
+	 */
 	function _buildChrome():Void
 	{
 		var T  = coolui.CoolUITheme.current;
-		_destroyOwnChrome();
-
 		var pw = (_pw > 0) ? _pw : 300;
 		var ph = (_ph > 0) ? _ph : 400;
 
-		// Fondo de la barra de tabs
+		// Tab bar
 		_tabBarBg = new FlxSprite(0, 0);
 		_tabBarBg.makeGraphic(pw, TAB_BAR_H, T.bgPanelAlt);
 		_tabBarBg.scrollFactor.set();
 		add(_tabBarBg);
 
-		// Línea separadora accent
+		// Accent line
 		_tabBarLine = new FlxSprite(0, TAB_BAR_H);
 		_tabBarLine.makeGraphic(pw, 1, T.accent);
 		_tabBarLine.alpha = 0.4;
@@ -192,9 +155,46 @@ class CoolTabMenu extends FlxSpriteGroup
 		_bodyBg.scrollFactor.set();
 		add(_bodyBg);
 
-		// Botones de tab
+		// Tab buttons
 		_buildTabBtns(pw, T);
 		_updateHighlights();
+	}
+
+	/**
+	 * Rebuild after resize/refresh — recreates chrome but PRESERVES groups
+	 * (removes them, destroys chrome, re-inserts them).
+	 */
+	function _rebuildChrome():Void
+	{
+		// ── Save group references before clearing members ────────
+		var savedGroups : Array<{id:String, g:FlxSpriteGroup}> = [];
+		for (id => g in _groups) savedGroups.push({id: id, g: g});
+
+		// ── Clear old chrome (do NOT destroy groups) ─────────────────
+		if (_fadeTween  != null) { _fadeTween.cancel(); _fadeTween = null; }
+		for (b in _tabBtns) { remove(b, true); b.destroy(); }
+		_tabBtns = [];
+
+		inline function _kill(s:FlxSprite):Void
+			if (s != null) { remove(s, true); s.destroy(); }
+		_kill(_bodyBg);     _bodyBg     = null;
+		_kill(_tabBarLine); _tabBarLine = null;
+		_kill(_tabBarBg);   _tabBarBg   = null;
+
+		// Also remove groups to reorder z-order
+		for (sg in savedGroups) remove(sg.g, true);
+
+		// ── Rebuild chrome ───────────────────────────────────────────────
+		_buildChrome();
+
+		// ── Re-add groups on top of the chrome ─────────────────────────
+		for (sg in savedGroups)
+		{
+			sg.g.x = 0;
+			sg.g.y = TAB_BAR_H + 1;
+			sg.g.visible = (sg.id == _selectedId);
+			add(sg.g);
+		}
 	}
 
 	function _buildTabBtns(pw:Int, T:CoolTheme):Void
@@ -236,27 +236,15 @@ class CoolTabMenu extends FlxSpriteGroup
 		);
 	}
 
-	function _destroyOwnChrome():Void
-	{
-		if (_fadeTween  != null) { _fadeTween.cancel(); _fadeTween = null; }
-		for (b in _tabBtns)     { remove(b, true); b.destroy(); }
-		_tabBtns = [];
-		inline function _kill(s:FlxSprite):Void
-			if (s != null) { remove(s, true); s.destroy(); }
-		_kill(_bodyBg);     _bodyBg     = null;
-		_kill(_tabBarLine); _tabBarLine = null;
-		_kill(_tabBarBg);   _tabBarBg   = null;
-	}
-
 	override public function destroy():Void
 	{
-		_destroyOwnChrome();
+		if (_fadeTween != null) { _fadeTween.cancel(); _fadeTween = null; }
 		super.destroy();
 	}
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// _TabBtn — botón de pestaña individual (privado al módulo)
+// _TabBtn
 // ─────────────────────────────────────────────────────────────────────────────
 
 private class _TabBtn extends FlxSpriteGroup
@@ -267,19 +255,17 @@ private class _TabBtn extends FlxSpriteGroup
 	var _bg        : FlxSprite;
 	var _underline : FlxSprite;
 	var _label     : FlxText;
-
-	var _bw       : Int;
-	var _bh       : Int;
-	var _isActive : Bool = false;
-	var _isHover  : Bool = false;
+	var _bw        : Int;
+	var _bh        : Int;
+	var _isActive  : Bool = false;
+	var _isHover   : Bool = false;
 
 	public function new(bx:Float, by:Float, bw:Int, bh:Int,
 	                    labelStr:String, name:String, T:CoolTheme)
 	{
 		super(bx, by);
 		tabName = name;
-		_bw = bw;
-		_bh = bh;
+		_bw = bw; _bh = bh;
 
 		_bg = new FlxSprite(0, 0);
 		_bg.makeGraphic(bw, bh, T.bgHover);
@@ -309,8 +295,7 @@ private class _TabBtn extends FlxSpriteGroup
 		_isActive = active;
 		if (active)
 		{
-			var c = FlxColor.fromInt(T.accent);
-			c.alphaFloat = 0.18;
+			var c = FlxColor.fromInt(T.accent); c.alphaFloat = 0.18;
 			_bg.makeGraphic(_bw, _bh, c);
 			_label.color = FlxColor.WHITE;
 			_label.alpha = 1.0;
@@ -331,20 +316,14 @@ private class _TabBtn extends FlxSpriteGroup
 		super.update(elapsed);
 		var hover = (FlxG.mouse.x >= x && FlxG.mouse.x <= x + _bw
 		          && FlxG.mouse.y >= y && FlxG.mouse.y <= y + _bh);
-
 		if (hover != _isHover)
 		{
 			_isHover = hover;
-			if (!_isActive)
-				_label.alpha = hover ? 1.0 : 0.75;
+			if (!_isActive) _label.alpha = hover ? 1.0 : 0.75;
 		}
 		if (hover && FlxG.mouse.justPressed && onClick != null)
 			onClick(tabName);
 	}
 
-	override public function destroy():Void
-	{
-		onClick = null;
-		super.destroy();
-	}
+	override public function destroy():Void { onClick = null; super.destroy(); }
 }

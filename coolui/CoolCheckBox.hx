@@ -10,7 +10,7 @@ import flixel.util.FlxColor;
 
 
 /**
- * CoolCheckBox — Reemplazo de `FlxUICheckBox` sin flixel-ui.
+ * CoolCheckBox — Drop-in replacement for `FlxUICheckBox`, no flixel-ui required.
  *
  * API compatible:
  *
@@ -18,15 +18,15 @@ import flixel.util.FlxColor;
  *   cb.checked  = true;
  *   cb.callback = function(v:Bool) { trace(v); };
  *
- * Parámetros null en posición 3 y 4 (textos de estado on/off) se ignoran
- * para mantener la firma igual que FlxUICheckBox.
+ * Parameters at positions 3 and 4 (on/off state text) are ignored
+ * to maintain API compatibility with FlxUICheckBox.
  */
 class CoolCheckBox extends FlxSpriteGroup
 {
 	static inline var BOX_SIZE : Int = 14;
 	static inline var HEIGHT   : Int = 16;
 
-	// ── API pública ──────────────────────────────────────────────────────────
+	// ── Public API ──────────────────────────────────────────────────────────
 
 	public var callback : Bool -> Void;
 
@@ -46,11 +46,11 @@ class CoolCheckBox extends FlxSpriteGroup
 	/**
 	 * @param px          X
 	 * @param py          Y
-	 * @param onGfx       Ignorado (compat FlxUICheckBox — pasaba gráfico "on")
-	 * @param offGfx      Ignorado (compat FlxUICheckBox — pasaba gráfico "off")
-	 * @param label       Texto a la derecha
-	 * @param labelWidth  Ancho del texto (px)
-	 * @param checked     Estado inicial
+	 * @param onGfx       Ignored (FlxUICheckBox compat — was the "on" graphic)
+	 * @param offGfx      Ignored (FlxUICheckBox compat — was the "off" graphic)
+	 * @param label       Text shown to the right
+	 * @param labelWidth  Label width in px
+	 * @param checked     Initial checked state
 	 */
 	public function new(px:Float = 0, py:Float = 0,
 	                    onGfx:Dynamic = null, offGfx:Dynamic = null,
@@ -81,16 +81,16 @@ class CoolCheckBox extends FlxSpriteGroup
 	{
 		var T = coolui.CoolUITheme.current;
 
-		// Fondo del cuadro
+		// Box background
 		_box = new FlxSprite(0, (HEIGHT - BOX_SIZE) >> 1);
 		_box.makeGraphic(BOX_SIZE, BOX_SIZE, T.bgPanelAlt);
-		// Borde
+		// Border
 		var brd = FlxColor.fromInt(T.borderColor);
 		brd.alphaFloat = 0.8;
-		_drawBorder(_box, brd);
+		_drawBorderr(_box, brd);
 		add(_box);
 
-		// Tilde (✓)
+		// Checkmark (✓)
 		_check = new FlxSprite(2, (HEIGHT - BOX_SIZE) >> 1);
 		_check.makeGraphic(BOX_SIZE - 4, BOX_SIZE - 4, FlxColor.TRANSPARENT);
 		_drawCheck(_check, FlxColor.fromInt(T.accent));
@@ -108,7 +108,7 @@ class CoolCheckBox extends FlxSpriteGroup
 		}
 	}
 
-	function _drawBorder(s:FlxSprite, color:FlxColor):Void
+	function _drawBorderr(s:FlxSprite, color:FlxColor):Void
 	{
 		var w = s.frameWidth;
 		var h = s.frameHeight;
@@ -123,7 +123,7 @@ class CoolCheckBox extends FlxSpriteGroup
 		var p = s.pixels;
 		var w = s.frameWidth;
 		var h = s.frameHeight;
-		// Dibujar ✓ como dos segmentos de línea
+		// Draw ✓ as two line segments
 		inline function px(ax:Int, ay:Int, bx:Int, by:Int):Void
 		{
 			var dx = bx - ax; var dy = by - ay;
@@ -160,7 +160,7 @@ class CoolCheckBox extends FlxSpriteGroup
 		}
 	}
 
-	/** Compat FlxUICheckBox: devuelve el FlxText del label. */
+	/** FlxUICheckBox compat: returns the label FlxText. */
 	public function getLabel():flixel.text.FlxText
 		return _label;
 

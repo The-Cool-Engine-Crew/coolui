@@ -12,22 +12,22 @@ import flixel.util.FlxColor;
 
 
 /**
- * CoolButton — Reemplazo de `FlxUIButton` y `FlxButtonPlus` sin flixel-ui.
+ * CoolButton — Drop-in replacement for `FlxUIButton` and `FlxButtonPlus`, no flixel-ui required.
  *
  * API compatible:
  *
  *   var btn = new CoolButton(x, y, "Click me", function() { trace("clicked"); });
  *   btn.resize(100, 24);
  *
- * Estilos disponibles:
- *  • `CoolButton.STYLE_DEFAULT`  — fondo sólido con accent border
- *  • `CoolButton.STYLE_ACCENT`   — fondo de color accent
- *  • `CoolButton.STYLE_DANGER`   — fondo rojo (para botones destructivos)
- *  • `CoolButton.STYLE_GHOST`    — solo borde, sin fondo
+ * Available styles:
+ *  • `CoolButton.STYLE_DEFAULT`  — solid background with accent border
+ *  • `CoolButton.STYLE_ACCENT`   — accent-coloured background
+ *  • `CoolButton.STYLE_DANGER`   — red background (for destructive actions)
+ *  • `CoolButton.STYLE_GHOST`    — border only, no background
  */
 class CoolButton extends FlxSpriteGroup
 {
-	// ── Estilos ──────────────────────────────────────────────────────────────
+	// ── Styles ──────────────────────────────────────────────────────────────
 	public static inline var STYLE_DEFAULT : Int = 0;
 	public static inline var STYLE_ACCENT  : Int = 1;
 	public static inline var STYLE_DANGER  : Int = 2;
@@ -36,12 +36,12 @@ class CoolButton extends FlxSpriteGroup
 	static inline var DEFAULT_W : Int = 80;
 	static inline var DEFAULT_H : Int = 20;
 
-	// ── Propiedades públicas ─────────────────────────────────────────────────
+	// ── Public properties ─────────────────────────────────────────────────
 
-	/** Callback al hacer clic. */
+	/** Callback fired on click. */
 	public var onClick : Void -> Void;
 
-	/** Si false, el botón no responde a clicks y aparece semi-transparente. */
+	/** When false, the button ignores clicks and appears semi-transparent. */
 	public var enabled(get, set) : Bool;
 
 	// ── Internals ────────────────────────────────────────────────────────────
@@ -55,19 +55,19 @@ class CoolButton extends FlxSpriteGroup
 	var _tween   : FlxTween;
 	var _hover        : Bool = false;
 	var _wasPressed   : Bool = false;
-	/** True durante UN frame después de soltar el botón encima. */
+	/** True for ONE frame after the button is released while hovered. */
 	public var justReleased : Bool = false;
 
 	// ── Constructor ──────────────────────────────────────────────────────────
 
 	/**
-	 * @param px      X
-	 * @param py      Y
-	 * @param label   Texto del botón
-	 * @param onClick Callback al clic
-	 * @param width   Ancho (por defecto 80)
-	 * @param height  Alto (por defecto 20)
-	 * @param style   Uno de STYLE_* (por defecto STYLE_DEFAULT)
+	 * @param px      X position
+	 * @param py      Y position
+	 * @param label   Button label text
+	 * @param onClick Click callback
+	 * @param width   Width (default 80)
+	 * @param height  Height (default 20)
+	 * @param style   One of STYLE_* (default STYLE_DEFAULT)
 	 */
 	public function new(px:Float = 0, py:Float = 0,
 	                    label:String = "",
@@ -97,7 +97,7 @@ class CoolButton extends FlxSpriteGroup
 	// ── Build ────────────────────────────────────────────────────────────────
 
 	/**
-	 * Compat con FlxButtonPlus/FlxUIButton: cambia fuente, tamaño y color del label.
+	 * FlxButtonPlus/FlxUIButton compat: changes the label font, size and colour.
 	 */
 	public function setLabelFormat(?font:String, size:Int = 8, color:Int = 0xFFFFFFFF,
 	                               alignment:String = "center"):Void
@@ -132,7 +132,7 @@ class CoolButton extends FlxSpriteGroup
 
 		_bg = new FlxSprite(0, 0);
 		_bg.makeGraphic(_bw, _bh, bgC);
-		_drawBorder(_bg, brdC);
+		_drawBorderr(_bg, brdC);
 		add(_bg);
 
 		_label = new FlxText(2, 0, _bw - 4, labelText, 8);
@@ -174,7 +174,7 @@ class CoolButton extends FlxSpriteGroup
 		};
 	}
 
-	function _drawBorder(s:FlxSprite, color:Int):Void
+	function _drawBorderr(s:FlxSprite, color:Int):Void
 	{
 		var w = s.frameWidth; var h = s.frameHeight;
 		var c = FlxColor.fromInt(color);
