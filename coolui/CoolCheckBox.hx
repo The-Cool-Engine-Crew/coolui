@@ -101,7 +101,7 @@ class CoolCheckBox extends FlxSpriteGroup
 		// Label
 		if (label != null && label.length > 0)
 		{
-			_label = new FlxText(BOX_SIZE + 4, 1, _lw, label, 8);
+			_label = new FlxText(BOX_SIZE + 4, 1, _lw, label, 10);
 			_label.color = FlxColor.fromInt(T.textPrimary);
 			_label.scrollFactor.set();
 			add(_label);

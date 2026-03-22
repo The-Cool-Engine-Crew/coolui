@@ -94,7 +94,7 @@ class CoolDropDown extends FlxSpriteGroup
 		super(px, py);
 		_data     = data ?? [];
 		_w        = width;
-		_header   = header ?? {text: _data.length > 0 ? _data[0].label : "—"};
+		_header   = header ?? {text: _data.length > 0 ? _data[0].label : "-"};
 		this.callback = callback;
 		_build();
 	}
@@ -172,7 +172,7 @@ class CoolDropDown extends FlxSpriteGroup
 		_btnLabel.scrollFactor.set();
 		add(_btnLabel);
 
-		_btnArrow = new FlxText(_w - 14, 1, 12, "▾", 9);
+		_btnArrow = new FlxText(_w - 14, 1, 12, "v", 9);
 		_btnArrow.color = FlxColor.fromInt(T.accent);
 		_btnArrow.scrollFactor.set();
 		add(_btnArrow);

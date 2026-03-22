@@ -88,7 +88,10 @@ class CoolInputText extends FlxSpriteGroup
 		_brdColor  = coolui.CoolUITheme.current.borderColor;
 
 		// Build the TextField
-		_fmt = new TextFormat(null, _fontSize, _textColor);
+		// Font size in game-pixels is much smaller than screen points.
+		// Multiply by 2 so the text visually matches FlxText at the same size.
+		var _screenFontSize = _fontSize * 2;
+		_fmt = new TextFormat("_sans", _screenFontSize, _textColor);
 		_field = new TextField();
 		_field.type              = TextFieldType.INPUT;
 		_field.defaultTextFormat = _fmt;
@@ -239,8 +242,8 @@ class CoolInputText extends FlxSpriteGroup
 		_field.width  = _w   * sx;
 		_field.height = _h   * sy;
 
-		// Scale font size to match screen zoom
-		_fmt.size = Std.int(_fontSize * sy);
+		// Scale font size: base is already 2× game size, then apply screen scale
+		_fmt.size = Std.int(_fontSize * 2 * sy);
 		_field.defaultTextFormat = _fmt;
 		_field.setTextFormat(_fmt);
 

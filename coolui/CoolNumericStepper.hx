@@ -111,19 +111,19 @@ class CoolNumericStepper extends FlxSpriteGroup
 		add(_bg);
 
 		// ▼ button
-		_btnDn = new _StepBtn(0, 0, BTN_W, HEIGHT, "◀", T);
+		_btnDn = new _StepBtn(0, 0, BTN_W, HEIGHT, "-", T);
 		_btnDn.scrollFactor.set();
 		_btnDn.onClick = function() step(-1);
 		add(_btnDn);
 
 		// ▲ button
-		_btnUp = new _StepBtn(_w - BTN_W, 0, BTN_W, HEIGHT, "▶", T);
+		_btnUp = new _StepBtn(_w - BTN_W, 0, BTN_W, HEIGHT, "+", T);
 		_btnUp.scrollFactor.set();
 		_btnUp.onClick = function() step(1);
 		add(_btnUp);
 
 		// Label
-		_label = new FlxText(BTN_W + 2, 1, labelW - 4, _formatValue(_value), 8);
+		_label = new FlxText(BTN_W + 2, 1, labelW - 4, _formatValue(_value), 10);
 		_label.alignment = CENTER;
 		_label.color = FlxColor.fromInt(T.textPrimary);
 		_label.scrollFactor.set();
@@ -262,7 +262,7 @@ private class _StepBtn extends FlxSpriteGroup
 		_bg.makeGraphic(bw, bh, T.bgHover);
 		add(_bg);
 
-		_label = new FlxText(0, 0, bw, arrow, 8);
+		_label = new FlxText(0, 0, bw, arrow, 11);
 		_label.alignment = CENTER;
 		_label.color = FlxColor.fromInt(T.accent);
 		_label.y = Std.int((bh - _label.height) * 0.5);
