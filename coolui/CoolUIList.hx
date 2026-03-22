@@ -1,5 +1,7 @@
 package coolui;
 
+import coolui.CoolTheme;
+
 import flixel.FlxG;
 import flixel.FlxSprite;
 import flixel.group.FlxSpriteGroup;
@@ -260,7 +262,7 @@ private class _ListRow extends FlxSpriteGroup
 	var _bg    : FlxSprite;
 
 	public function new(rx:Float, ry:Float, w:Int, h:Int, idx:Int, text:String,
-	                    selected:Bool, T:coolui.CoolTheme)
+	                    selected:Bool, T:CoolTheme)
 	{
 		super(rx, ry);
 		_idx = idx; _bw = w; _bh = h;

@@ -1,5 +1,7 @@
 package coolui;
 
+import coolui.CoolTheme;
+
 import flixel.FlxG;
 import flixel.FlxSprite;
 import flixel.group.FlxSpriteGroup;
@@ -195,7 +197,7 @@ class CoolTabMenu extends FlxSpriteGroup
 		_updateHighlights();
 	}
 
-	function _buildTabBtns(pw:Int, T:coolui.CoolTheme):Void
+	function _buildTabBtns(pw:Int, T:CoolTheme):Void
 	{
 		for (b in _tabBtns) { remove(b, true); b.destroy(); }
 		_tabBtns = [];
@@ -272,7 +274,7 @@ private class _TabBtn extends FlxSpriteGroup
 	var _isHover  : Bool = false;
 
 	public function new(bx:Float, by:Float, bw:Int, bh:Int,
-	                    labelStr:String, name:String, T:coolui.CoolTheme)
+	                    labelStr:String, name:String, T:CoolTheme)
 	{
 		super(bx, by);
 		tabName = name;
@@ -302,7 +304,7 @@ private class _TabBtn extends FlxSpriteGroup
 		add(_label);
 	}
 
-	public function setActive(active:Bool, T:coolui.CoolTheme):Void
+	public function setActive(active:Bool, T:CoolTheme):Void
 	{
 		_isActive = active;
 		if (active)

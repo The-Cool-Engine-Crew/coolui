@@ -1,5 +1,7 @@
 package coolui;
 
+import coolui.CoolTheme;
+
 /**
  * CoolUITheme — Sistema de theming standalone para la librería CoolUI.
  *
@@ -31,21 +33,6 @@ package coolui;
  *   }
  */
 
-typedef CoolTheme = {
-	var bgDark        : Int;
-	var bgPanel       : Int;
-	var bgPanelAlt    : Int;
-	var bgHover       : Int;
-	var borderColor   : Int;
-	var accent        : Int;
-	var accentAlt     : Int;
-	var textPrimary   : Int;
-	var textSecondary : Int;
-	var rowSelected   : Int;
-	var rowEven       : Int;
-	var rowOdd        : Int;
-	var error         : Int;
-}
 
 class CoolUITheme
 {

@@ -1,5 +1,7 @@
 package coolui;
 
+import coolui.CoolTheme;
+
 import flixel.FlxG;
 import flixel.FlxSprite;
 import flixel.group.FlxSpriteGroup;
@@ -114,7 +116,7 @@ class CoolTooltip extends FlxSpriteGroup
 	}
 
 	function _rebuild(text:String, tw:Int, fontSize:Int,
-	                  T:coolui.CoolTheme):Void
+	                  T:CoolTheme):Void
 	{
 		for (m in members) { remove(m, true); m.destroy(); }
 		members.resize(0);

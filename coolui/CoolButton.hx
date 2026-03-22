@@ -1,5 +1,7 @@
 package coolui;
 
+import coolui.CoolTheme;
+
 import flixel.FlxG;
 import flixel.FlxSprite;
 import flixel.group.FlxSpriteGroup;
@@ -138,7 +140,7 @@ class CoolButton extends FlxSpriteGroup
 		add(_label);
 	}
 
-	function _bgColor(T:coolui.CoolTheme):Int
+	function _bgColor(T:CoolTheme):Int
 	{
 		return switch (_style)
 		{
@@ -149,7 +151,7 @@ class CoolButton extends FlxSpriteGroup
 		};
 	}
 
-	function _borderColor(T:coolui.CoolTheme):Int
+	function _borderColor(T:CoolTheme):Int
 	{
 		return switch (_style)
 		{
@@ -160,7 +162,7 @@ class CoolButton extends FlxSpriteGroup
 		};
 	}
 
-	function _textColor(T:coolui.CoolTheme):Int
+	function _textColor(T:CoolTheme):Int
 	{
 		return switch (_style)
 		{

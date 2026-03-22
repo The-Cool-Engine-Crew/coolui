@@ -1,5 +1,7 @@
 package coolui;
 
+import coolui.CoolTheme;
+
 import flixel.FlxG;
 import flixel.FlxSprite;
 import flixel.group.FlxSpriteGroup;
@@ -245,7 +247,7 @@ private class _DropList extends FlxSpriteGroup
 	var _scroll   : Int = 0;
 
 	public function new(lx:Float, ly:Float, w:Int, data, selected:Int,
-	                    T:coolui.CoolTheme, onSelect:Int->Void)
+	                    T:CoolTheme, onSelect:Int->Void)
 	{
 		super(lx, ly);
 		_data     = data;
@@ -255,7 +257,7 @@ private class _DropList extends FlxSpriteGroup
 		_build(T);
 	}
 
-	function _build(T:coolui.CoolTheme):Void
+	function _build(T:CoolTheme):Void
 	{
 		var visible = Std.int(Math.min(_data.length, MAX_VISIBLE));
 		var h = visible * CoolDropDown.ROW_H;

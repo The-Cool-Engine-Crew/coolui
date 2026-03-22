@@ -1,5 +1,7 @@
 package coolui;
 
+import coolui.CoolTheme;
+
 import flixel.FlxG;
 import flixel.FlxSprite;
 import flixel.group.FlxSpriteGroup;
@@ -245,7 +247,7 @@ private class _StepBtn extends FlxSpriteGroup
 	var _bh    : Int;
 
 	public function new(bx:Float, by:Float, bw:Int, bh:Int, arrow:String,
-	                    T:coolui.CoolTheme)
+	                    T:CoolTheme)
 	{
 		super(bx, by);
 		_bw = bw; _bh = bh;
