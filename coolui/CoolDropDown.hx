@@ -185,28 +185,26 @@ class CoolDropDown extends FlxSpriteGroup {
 
 	// ── Update ───────────────────────────────────────────────────────────────
 
-	override public function update(elapsed:Float):Void {
+	override public function update(elapsed:Float):Void
+	{
 		super.update(elapsed);
 
-		// Click on the dropdown button
-		// Use screen position — x/y are LOCAL coords inside parent group,
-		// but mouse coords are in camera/world space.
-		if (FlxG.mouse.justPressed) {
-			var sp = flixel.math.FlxPoint.get();
-			getScreenPosition(sp, camera);
-			var sx = sp.x; var sy = sp.y;
-			sp.put();
+		if (FlxG.mouse.justPressed)
+		{
+			// Use game-world mouse coords (FlxG.mouse.x/y) and compare with
+			// the world position of this group. Both are in game-space so they
+			// always match regardless of window scale or camera zoom.
+			var mx    = FlxG.mouse.x;
+			var my    = FlxG.mouse.y;
+			var inBtn = mx >= x && mx <= x + _w && my >= y && my <= y + ROW_H;
 
-			var mx = FlxG.mouse.screenX;
-			var my = FlxG.mouse.screenY;
-			var inBtn = mx >= sx && mx <= sx + _w && my >= sy && my <= sy + ROW_H;
-
-			if (inBtn) {
-				if (_list == null)
-					_openList();
-				else
-					_closeList();
-			} else if (_list != null && !_list.containsMouse(FlxG.mouse.screenX, FlxG.mouse.screenY)) {
+			if (inBtn)
+			{
+				if (_list == null) _openList();
+				else               _closeList();
+			}
+			else if (_list != null && !_list.containsMouse(mx, my))
+			{
 				_closeList();
 			}
 		}
@@ -216,30 +214,16 @@ class CoolDropDown extends FlxSpriteGroup {
 
 	function _openList():Void
 	{
-		var T = coolui.CoolUITheme.current;
+		var T          = coolui.CoolUITheme.current;
 		var maxVisible = 8;
+		var listH      = Math.min(_data.length, maxVisible) * ROW_H;
 
-		// Convert from game-space to real screen pixels.
-		// getScreenPosition gives game-pixels; scale by FlxG.scaleMode.scale
-		// so the list tracks correctly at any window size or zoom level.
-		var sp  = flixel.math.FlxPoint.get();
-		getScreenPosition(sp, camera);
-		var scx     = FlxG.scaleMode.scale.x;
-		var scy     = FlxG.scaleMode.scale.y;
-		var screenX = sp.x * scx;
-		var screenY = sp.y * scy;
-		sp.put();
+		// Position list in game-world coordinates — same space as FlxG.mouse.x/y.
+		// Opens below the button, or above if it would go off screen.
+		var openDown = (y + ROW_H + listH < FlxG.height);
+		var listY    = openDown ? (y + ROW_H) : (y - listH);
 
-		// Scale row height and width to match actual screen pixels.
-		var scaledRowH = Std.int(ROW_H * scy);
-		var scaledW    = Std.int(_w   * scx);
-		var listH      = Math.min(_data.length, maxVisible) * scaledRowH;
-
-		var stageH     = FlxG.stage != null ? FlxG.stage.stageHeight : FlxG.height;
-		var openDown   = (screenY + scaledRowH + listH < stageH);
-		var listY      = openDown ? (screenY + scaledRowH) : (screenY - listH);
-
-		_list = new _DropList(screenX, listY, scaledW, scaledRowH,
+		_list = new _DropList(x, listY, _w, ROW_H,
 		                      _data, _selectedIdx, T, function(idx:Int)
 		{
 			_selectedIdx   = idx;
@@ -248,7 +232,6 @@ class CoolDropDown extends FlxSpriteGroup {
 			if (callback != null) callback(_data[idx].name);
 		});
 
-		// Pin to screen so it doesn't scroll with the game camera.
 		_list.scrollFactor.set(0, 0);
 		_list.cameras = cameras;
 
@@ -283,11 +266,12 @@ class CoolDropDown extends FlxSpriteGroup {
 private class _DropList extends FlxSpriteGroup {
 	static inline var MAX_VISIBLE:Int = 8;
 
-	var _data:Array<{name:String, label:String}>;
-	var _selected:Int;
-	var _onSelect:Int->Void;
-	var _w:Int;
-	var _scroll:Int = 0;
+	var _data    : Array<{name:String, label:String}>;
+	var _selected : Int;
+	var _onSelect : Int -> Void;
+	var _w        : Int;
+	var _rowH     : Int = CoolDropDown.ROW_H;
+	var _scroll   : Int = 0;
 
 	public function new(lx:Float, ly:Float, w:Int, rowH:Int,
 	                    data, selected:Int, T:CoolTheme, onSelect:Int->Void)
@@ -348,9 +332,8 @@ private class _DropList extends FlxSpriteGroup {
 	override public function update(elapsed:Float):Void {
 		super.update(elapsed);
 		if (FlxG.mouse.justPressed) {
-			// Use screenX/Y to match the screen-space position of the list
-			var mx = FlxG.mouse.screenX;
-			var my = FlxG.mouse.screenY;
+			var mx = FlxG.mouse.x;
+			var my = FlxG.mouse.y;
 			if (!containsMouse(mx, my))
 				return;
 			var row = Std.int((my - y) / _rowH) + _scroll;
