@@ -30,5 +30,5 @@ jobs:
           haxelib install flixel --quiet
           haxelib dev coolui ${{ github.workspace }}
 
-      - name: Typecheck (no build needed — lib only)
-        run: haxe --no-output -cp . "--macro" "include('coolui')" -lib flixel -lib openfl -lib lime
+      - name: Typecheck
+        run: haxe -cp . -lib flixel -lib openfl -lib lime --macro "include('coolui')" -neko out.n
