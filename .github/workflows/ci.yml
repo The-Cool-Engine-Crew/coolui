@@ -25,10 +25,10 @@ jobs:
 
       - name: Install dependencies
         run: |
-          haxelib install lime       --quiet
-          haxelib install openfl     --quiet
-          haxelib install flixel     --quiet
+          haxelib install lime   --quiet
+          haxelib install openfl --quiet
+          haxelib install flixel --quiet
           haxelib dev coolui ${{ github.workspace }}
 
       - name: Typecheck (no build needed — lib only)
-        run: haxe --no-output -cp . --macro include('coolui') -lib flixel -lib openfl -lib lime
+        run: haxe --no-output -cp . "--macro" "include('coolui')" -lib flixel -lib openfl -lib lime
