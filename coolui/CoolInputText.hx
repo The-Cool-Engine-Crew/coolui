@@ -8,6 +8,8 @@ import flixel.util.FlxColor;
 import flixel.util.FlxDestroyUtil;
 import openfl.events.Event;
 import openfl.events.FocusEvent;
+import openfl.events.KeyboardEvent;
+import openfl.ui.Keyboard;
 import openfl.text.Font;
 import openfl.text.TextField;
 import openfl.text.TextFieldType;
@@ -42,6 +44,10 @@ class CoolInputText extends FlxSpriteGroup {
 	public var callback:String->String->Void;
 	public var onFocusGained:Void->Void;
 	public var onFocusLost:Void->Void;
+	/** Called when Enter is pressed while the field has focus. */
+	public var onEnterPressed:Void->Void;
+	/** Called when Escape is pressed while the field has focus. */
+	public var onEscapePressed:Void->Void;
 
 	// Alias for DialogueEditor and other callers
 	public var focusGained(get, set):Void->Void;
@@ -128,6 +134,7 @@ class CoolInputText extends FlxSpriteGroup {
 		_field.addEventListener(Event.CHANGE, _onChange);
 		_field.addEventListener(FocusEvent.FOCUS_IN, _onFocusIn);
 		_field.addEventListener(FocusEvent.FOCUS_OUT, _onFocusOut);
+		_field.addEventListener(KeyboardEvent.KEY_DOWN, _onKeyDown);
 		// Note: Caps Lock works automatically because the OpenFL TextField
 		// receives input directly from the OS when
 		// FlxG.keys.enabled = false (set in _onFocusIn).
@@ -257,6 +264,22 @@ class CoolInputText extends FlxSpriteGroup {
 			onFocusLost();
 	}
 
+	function _onKeyDown(e:KeyboardEvent):Void {
+		switch (e.keyCode) {
+			case Keyboard.ENTER | Keyboard.NUMPAD_ENTER:
+				if (callback != null)
+					callback(_field.text, "enter");
+				if (onEnterPressed != null)
+					onEnterPressed();
+			case Keyboard.ESCAPE:
+				if (callback != null)
+					callback(_field.text, "escape");
+				if (onEscapePressed != null)
+					onEscapePressed();
+			default:
+		}
+	}
+
 	// ── Filter ────────────────────────────────────────────────────────────────
 	function _applyFilter(t:String):String {
 		return switch (filterMode) {
@@ -329,11 +352,14 @@ class CoolInputText extends FlxSpriteGroup {
 			_field.removeEventListener(Event.CHANGE, _onChange);
 			_field.removeEventListener(FocusEvent.FOCUS_IN, _onFocusIn);
 			_field.removeEventListener(FocusEvent.FOCUS_OUT, _onFocusOut);
+			_field.removeEventListener(KeyboardEvent.KEY_DOWN, _onKeyDown);
 			_field = null;
 		}
 		callback = null;
 		onFocusGained = null;
 		onFocusLost = null;
+		onEnterPressed = null;
+		onEscapePressed = null;
 		super.destroy();
 	}
 }
