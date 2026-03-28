@@ -227,10 +227,26 @@ class CoolInputText extends FlxSpriteGroup {
 
 	// ── TextField mount ───────────────────────────────────────────────────────
 	public function _mount():Void {
-		if (_onStage || _field == null || FlxG.stage == null)
+		if (_onStage || _field == null || FlxG.game == null)
 			return;
-		FlxG.stage.addChild(_field);
+		// Mount inside FlxG.game, NOT FlxG.stage.
+		// FlxG.game contains all camera bitmaps, so we render above them.
+		// Anything added to FlxG.stage directly (transition curtains, fade
+		// overlays, etc.) lives one level above FlxG.game and will naturally
+		// appear on top of this field without any special handling.
+		FlxG.game.addChild(_field);
 		_onStage = true;
+		_bringToFront();
+	}
+
+	function _bringToFront():Void {
+		if (_field == null || FlxG.game == null || !_onStage)
+			return;
+		// Stay on top within FlxG.game (above camera bitmaps).
+		// Stage-level overlays are unaffected since they're a level above.
+		var top = FlxG.game.numChildren - 1;
+		if (FlxG.game.getChildIndex(_field) != top)
+			FlxG.game.setChildIndex(_field, top);
 	}
 
 	function _unmount():Void {
@@ -301,20 +317,26 @@ class CoolInputText extends FlxSpriteGroup {
 			return;
 		}
 
-		// Calculate position in real screen pixels
+		// Keep the field on top of all cameras and overlays every frame.
+		// Other display objects (HUD cameras, debug overlays, etc.) may be
+		// added to the stage after _mount(), pushing this field behind them.
+		_bringToFront();
+
+		// Calculate position in FlxG.game's local coordinate space.
+		// Because this field is a child of FlxG.game, OpenFL automatically
+		// applies FlxG.game's own scale and offset (letterbox/pillarbox).
+		// We must NOT multiply by sx/sy or add ox/oy here — that would
+		// double-apply the transform and cause drift on resize.
 		var sp = FlxPoint.get();
 		getScreenPosition(sp, camera);
 
-		var sx = FlxG.scaleMode.scale.x;
-		var sy = FlxG.scaleMode.scale.y;
+		_field.x = sp.x;
+		_field.y = sp.y;
+		_field.width = _w;
+		_field.height = _h;
 
-		_field.x = sp.x * sx;
-		_field.y = sp.y * sy;
-		_field.width = _w * sx;
-		_field.height = _h * sy;
-
-		// Scale font size: 1.5× game size then apply screen scale factor
-		_fmt.size = Std.int(_fontSize * 1.5 * sy);
+		// Font size in game-space pixels (parent scale handles screen mapping)
+		_fmt.size = Std.int(_fontSize * 1.5);
 		_field.defaultTextFormat = _fmt;
 		_field.setTextFormat(_fmt);
 
