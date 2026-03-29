@@ -1,6 +1,6 @@
 package coolui;
 
-import flixel.FlxBasic;
+import flixel.FlxSprite;
 import flixel.group.FlxSpriteGroup;
 
 /**
@@ -105,14 +105,14 @@ class CoolUIGroup extends FlxSpriteGroup {
 		}
 	}
 
-	override public function add(basic:FlxBasic):FlxBasic {
-		var result = super.add(basic);
+	override public function add(sprite:FlxSprite):FlxSprite {
+		var result = super.add(sprite);
 		if (autoLayout && _layoutMode != LAYOUT_NONE) doLayout();
 		return result;
 	}
 
-	override public function remove(basic:FlxBasic, splice:Bool = false):FlxBasic {
-		var result = super.remove(basic, splice);
+	override public function remove(sprite:FlxSprite, splice:Bool = false):FlxSprite {
+		var result = super.remove(sprite, splice);
 		if (autoLayout && _layoutMode != LAYOUT_NONE) doLayout();
 		return result;
 	}

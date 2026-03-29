@@ -1,35 +1,38 @@
 package coolui;
 
-import coolui.CoolTheme;
+import coolui.CoolUITheme;
 import flixel.FlxG;
 import flixel.FlxSprite;
 import flixel.group.FlxSpriteGroup;
 import flixel.text.FlxText;
-import flixel.tweens.FlxEase;
-import flixel.tweens.FlxTween;
 import flixel.util.FlxColor;
 
 /**
- * CoolSlider — Horizontal or vertical value slider.
+ * CoolSlider — Horizontal or vertical linear slider.
  *
- * Usage:
- *   var s = new CoolSlider(x, y, 0, 100, 50, 200);      // horizontal, 0-100, value 50, 200px wide
- *   var v = new CoolSlider(x, y, 0, 1, 0.5, 120, true); // vertical
- *   s.onChange = function(v:Float) { trace(v); };
- *   s.showValue = true;   // draws current value as text next to the thumb
+ * Can use a custom sprite image as the thumb (handle), or the built-in
+ * procedural rectangle thumb.
+ *
+ * Usage — simple horizontal:
+ *   var s = new CoolSlider(x, y, 0, 100, 50, 200);
+ *   s.showValue = true;
+ *   s.onChange  = function(v) trace(v);
+ *
+ * Usage — vertical with custom thumb image:
+ *   var s = new CoolSlider(x, y, 0, 1, 0.5, 120, true, 1, "assets/images/knob.png");
  *
  * Controls:
- *   Drag the thumb with the mouse.
- *   Click anywhere on the track to jump.
- *   Left/Right (or Up/Down for vertical) arrows when hovered change by `step`.
- *   Mouse wheel changes by `step`.
+ *   Drag the thumb or click anywhere on the track to jump.
+ *   Left/Right (horizontal) or Up/Down (vertical) arrow keys when hovered.
+ *   Mouse wheel when hovered.
  */
 class CoolSlider extends FlxSpriteGroup {
-	static inline var THUMB_W:Int  = 8;
-	static inline var THUMB_H:Int  = 16;
-	static inline var TRACK_H:Int  = 4;
 
-	// ── Public API ────────────────────────────────────────────────────────────
+	static inline var THUMB_W:Int = 12;
+	static inline var THUMB_H:Int = 20;
+	static inline var TRACK_H:Int = 4;
+
+	// ── Public API ─────────────────────────────────────────────────────────
 	public var onChange:Float->Void;
 
 	public var value(get, set):Float;
@@ -37,93 +40,117 @@ class CoolSlider extends FlxSpriteGroup {
 	public var maxValue:Float;
 	public var step:Float;
 	public var vertical:Bool;
+
+	/** Show the current value as a label next to the thumb. */
 	public var showValue:Bool = false;
+	/** Decimal places in value label (0 = integer). */
 	public var decimals:Int   = 0;
 
-	// ── Internals ─────────────────────────────────────────────────────────────
+	// ── Internals ──────────────────────────────────────────────────────────
 	var _value:Float;
-	var _trackLen:Int;   // usable length (width or height depending on orientation)
+	var _trackLen:Int;
+	var _imagePath:String;
+	var _thumbW:Int;
+	var _thumbH:Int;
+
 	var _track:FlxSprite;
 	var _fill:FlxSprite;
 	var _thumb:FlxSprite;
-	var _valueLabel:FlxText;
-	var _dragging:Bool  = false;
-	var _hovered:Bool   = false;
-	var _tween:FlxTween;
+	var _label:FlxText;
+
+	var _dragging:Bool = false;
+	var _hovered:Bool  = false;
 
 	/**
-	 * @param px         X
-	 * @param py         Y
+	 * @param px         X position
+	 * @param py         Y position
 	 * @param min        Minimum value
 	 * @param max        Maximum value
-	 * @param value      Initial value
-	 * @param trackLen   Length of the slider track in pixels
-	 * @param vertical   True for a vertical slider
+	 * @param initValue  Initial value
+	 * @param trackLen   Length of the track in pixels
+	 * @param vertical   True for vertical orientation
 	 * @param step       Arrow-key / wheel step (default 1)
+	 * @param imagePath  Optional path to a custom thumb image asset.
+	 *                   Pass null or "" to use the procedural thumb.
+	 * @param thumbW     Width  of the custom thumb in pixels
+	 * @param thumbH     Height of the custom thumb in pixels
 	 */
 	public function new(px:Float = 0, py:Float = 0, min:Float = 0, max:Float = 1,
-	                    value:Float = 0, trackLen:Int = 120, vertical:Bool = false, step:Float = 1) {
+	                    initValue:Float = 0, trackLen:Int = 120, vertical:Bool = false,
+	                    step:Float = 1, imagePath:String = "assets/images/coolui_knob.png",
+	                    thumbW:Int = 32, thumbH:Int = 32) {
 		super(px, py);
-		minValue  = min;
-		maxValue  = max;
-		this.step = step;
-		this.vertical = vertical;
-		_trackLen = (trackLen > THUMB_W * 2) ? trackLen : THUMB_W * 2;
-		_value    = _clamp(value);
+		minValue       = min;
+		maxValue       = max;
+		this.step      = step;
+		this.vertical  = vertical;
+		_trackLen      = (trackLen > THUMB_W * 2) ? trackLen : THUMB_W * 2;
+		_imagePath     = imagePath;
+		_thumbW        = thumbW;
+		_thumbH        = thumbH;
+		_value         = _clamp(initValue);
 		_build();
 	}
 
-	// ── Getters / Setters ─────────────────────────────────────────────────────
+	// ── Getters / Setters ──────────────────────────────────────────────────
 	function get_value():Float return _value;
 	function set_value(v:Float):Float {
-		var clamped = _clamp(v);
-		if (clamped == _value) return _value;
-		_value = clamped;
+		var c = _clamp(v);
+		if (c == _value) return _value;
+		_value = c;
 		_syncThumb();
 		if (onChange != null) onChange(_value);
 		return _value;
 	}
 
-	// ── Build ─────────────────────────────────────────────────────────────────
+	// ── Build ──────────────────────────────────────────────────────────────
 	function _build():Void {
-		var T = coolui.CoolUITheme.current;
+		var T = CoolUITheme.current;
+		var hasImage = (_imagePath != null && _imagePath.length > 0);
 
-		var tw = vertical ? THUMB_H : _trackLen;
-		var th = vertical ? _trackLen : THUMB_H;
-		var tx = vertical ? Std.int((THUMB_H - TRACK_H) / 2) : 0;
-		var ty = vertical ? 0 : Std.int((THUMB_H - TRACK_H) / 2);
-		var tLen = vertical ? th : tw;
-		var tW   = vertical ? TRACK_H : tLen;
-		var tH   = vertical ? tLen : TRACK_H;
+		var tW = hasImage ? _thumbW : (vertical ? THUMB_H : THUMB_W);
+		var tH = hasImage ? _thumbH : (vertical ? THUMB_W : THUMB_H);
 
-		// Track background
-		_track = new FlxSprite(tx, ty);
-		_track.makeGraphic(tW, tH, T.bgHover);
+		var trackX = vertical ? Std.int((tW - TRACK_H) / 2) : 0;
+		var trackY = vertical ? 0 : Std.int((tH - TRACK_H) / 2);
+		var trackW = vertical ? TRACK_H : _trackLen;
+		var trackH = vertical ? _trackLen : TRACK_H;
+
+		_track = new FlxSprite(trackX, trackY);
+		_track.makeGraphic(trackW, trackH, FlxColor.fromInt(T.bgHover));
 		_track.scrollFactor.set(0, 0);
 		var brd = FlxColor.fromInt(T.borderColor);
 		brd.alphaFloat = 0.5;
 		_drawBorder(_track, brd);
 		add(_track);
 
-		// Fill (accent color, same shape but shorter)
-		_fill = new FlxSprite(tx, ty);
-		_fill.makeGraphic(vertical ? TRACK_H : 1, vertical ? 1 : TRACK_H, FlxColor.fromInt(T.accent));
+		_fill = new FlxSprite(trackX, trackY);
+		_fill.makeGraphic(
+			vertical ? TRACK_H : 1,
+			vertical ? 1 : TRACK_H,
+			FlxColor.fromInt(T.accent)
+		);
 		_fill.scrollFactor.set(0, 0);
 		add(_fill);
 
-		// Thumb
-		_thumb = new FlxSprite(0, 0);
-		_thumb.makeGraphic(vertical ? THUMB_H : THUMB_W, vertical ? THUMB_W : THUMB_H, FlxColor.TRANSPARENT);
+		if (hasImage) {
+			_thumb = new FlxSprite(0, 0, _imagePath);
+			_thumb.setGraphicSize(tW, tH);
+			_thumb.updateHitbox();
+		} else {
+			_thumb = new FlxSprite(0, 0);
+			_thumb.makeGraphic(tW, tH, FlxColor.TRANSPARENT);
+			_drawProceduralThumb(FlxColor.fromInt(T.accent), FlxColor.fromInt(T.bgPanel));
+		}
+		_thumb.antialiasing = true;
 		_thumb.scrollFactor.set(0, 0);
-		_drawThumb(_thumb, FlxColor.fromInt(T.accent), FlxColor.fromInt(T.bgPanel));
 		add(_thumb);
 
-		// Value label
-		_valueLabel = new FlxText(0, 0, 50, "", 8);
-		_valueLabel.color = FlxColor.fromInt(T.textSecondary);
-		_valueLabel.scrollFactor.set(0, 0);
-		_valueLabel.visible = showValue;
-		add(_valueLabel);
+		_label = new FlxText(0, 0, 50, "", 8);
+		_label.color = FlxColor.fromInt(T.textSecondary);
+		_label.scrollFactor.set(0, 0);
+		_label.visible = false;
+		add(_label);
 
 		_syncThumb();
 	}
@@ -135,61 +162,61 @@ class CoolSlider extends FlxSpriteGroup {
 		s.pixels = p;
 	}
 
-	function _drawThumb(s:FlxSprite, fill:FlxColor, bg:FlxColor):Void {
-		var w = s.frameWidth; var h = s.frameHeight; var p = s.pixels;
+	function _drawProceduralThumb(fill:FlxColor, bg:FlxColor):Void {
+		var w = _thumb.frameWidth; var h = _thumb.frameHeight; var p = _thumb.pixels;
 		for (py in 0...h) for (px in 0...w) {
-			if (px == 0 || px == w-1 || py == 0 || py == h-1) p.setPixel32(px, py, fill);
-			else p.setPixel32(px, py, bg);
+			if (px == 0 || px == w-1 || py == 0 || py == h-1)
+				p.setPixel32(px, py, fill);
+			else
+				p.setPixel32(px, py, bg);
 		}
-		// Accent center line
 		var cx = Std.int(w / 2); var cy = Std.int(h / 2);
 		if (vertical) { for (px in 2...w-2) p.setPixel32(px, cy, fill); }
 		else          { for (py in 2...h-2) p.setPixel32(cx, py, fill); }
-		s.pixels = p;
+		_thumb.pixels = p;
 	}
 
-	// ── Thumb sync ─────────────────────────────────────────────────────────────
+	// ── Thumb sync ─────────────────────────────────────────────────────────
 	function _syncThumb():Void {
-		var ratio   = (maxValue > minValue) ? (_value - minValue) / (maxValue - minValue) : 0.0;
-		var usable  = _trackLen - (vertical ? THUMB_W : THUMB_W);
+		var ratio  = (maxValue > minValue) ? (_value - minValue) / (maxValue - minValue) : 0.0;
+		var tW     = _thumb.frameWidth;
+		var tH     = _thumb.frameHeight;
+		var usable = _trackLen - (vertical ? tH : tW);
 
 		if (vertical) {
-			var fillH   = Std.int(ratio * usable);
-			var thumbY  = Std.int(ratio * usable);
-			_thumb.y    = thumbY;
-			_fill.y     = 0;
-			_fill.setGraphicSize(TRACK_H, fillH + Std.int(THUMB_W / 2));
+			var pos  = Std.int(ratio * usable);
+			_thumb.x = Std.int(_track.x - tW / 2 + TRACK_H / 2);
+			_thumb.y = pos;
+			_fill.x  = _track.x;
+			_fill.y  = 0;
+			_fill.setGraphicSize(TRACK_H, pos + Std.int(tH / 2));
 			_fill.updateHitbox();
 		} else {
-			var fillW   = Std.int(ratio * usable);
-			var thumbX  = Std.int(ratio * usable);
-			_thumb.x    = thumbX;
-			_fill.x     = Std.int((THUMB_H - TRACK_H) / 2);
-			_fill.setGraphicSize(fillW + Std.int(THUMB_W / 2), TRACK_H);
+			var pos  = Std.int(ratio * usable);
+			_thumb.x = pos;
+			_thumb.y = Std.int(_track.y - tH / 2 + TRACK_H / 2);
+			_fill.x  = _track.x;
+			_fill.y  = _track.y;
+			_fill.setGraphicSize(pos + Std.int(tW / 2), TRACK_H);
 			_fill.updateHitbox();
 		}
 
-		if (showValue && _valueLabel != null) {
-			_valueLabel.text = _formatValue(_value);
-			_valueLabel.visible = true;
-			if (vertical) { _valueLabel.x = THUMB_H + 4; _valueLabel.y = _thumb.y; }
-			else          { _valueLabel.x = _trackLen + 4; _valueLabel.y = Std.int((THUMB_H - _valueLabel.height) / 2); }
+		if (showValue && _label != null) {
+			_label.text    = _formatValue(_value);
+			_label.visible = true;
+			if (vertical) {
+				_label.x = _thumb.x + _thumb.frameWidth + 4;
+				_label.y = _thumb.y + Std.int((_thumb.frameHeight - _label.height) / 2);
+			} else {
+				_label.x = _trackLen + 4;
+				_label.y = _thumb.y + Std.int((_thumb.frameHeight - _label.height) / 2);
+			}
+		} else if (_label != null) {
+			_label.visible = false;
 		}
 	}
 
-	function _formatValue(v:Float):String {
-		if (decimals <= 0) return Std.string(Std.int(v));
-		var factor = Math.pow(10, decimals);
-		return Std.string(Math.round(v * factor) / factor);
-	}
-
-	function _clamp(v:Float):Float {
-		if (v < minValue) return minValue;
-		if (v > maxValue) return maxValue;
-		return v;
-	}
-
-	// ── Update ────────────────────────────────────────────────────────────────
+	// ── Update ─────────────────────────────────────────────────────────────
 	override public function update(elapsed:Float):Void {
 		super.update(elapsed);
 
@@ -197,28 +224,21 @@ class CoolSlider extends FlxSpriteGroup {
 		var mx = mp.x; var my = mp.y;
 		mp.put();
 
-		// Bounds of the full widget
-		var totalW = vertical ? THUMB_H : _trackLen;
-		var totalH = vertical ? _trackLen : THUMB_H;
+		var totalW = vertical ? (_thumb.frameWidth  + 8) : _trackLen;
+		var totalH = vertical ? _trackLen : (_thumb.frameHeight + 8);
 		_hovered   = mx >= x && mx <= x + totalW && my >= y && my <= y + totalH;
 
-		// Start drag on click anywhere in the track
 		if (_hovered && FlxG.mouse.justPressed) _dragging = true;
 		if (!FlxG.mouse.pressed) _dragging = false;
 
 		if (_dragging) {
+			var usable = _trackLen - (vertical ? _thumb.frameHeight : _thumb.frameWidth);
 			var ratio:Float;
-			if (vertical) {
-				var usable = _trackLen - THUMB_W;
-				ratio = (my - y) / usable;
-			} else {
-				var usable = _trackLen - THUMB_W;
-				ratio = (mx - x) / usable;
-			}
+			if (vertical) ratio = (my - y) / usable;
+			else          ratio = (mx - x) / usable;
 			value = minValue + _clamp01(ratio) * (maxValue - minValue);
 		}
 
-		// Arrow keys + mouse wheel when hovered
 		if (_hovered || _dragging) {
 			var dir = 0;
 			if (vertical) {
@@ -232,11 +252,23 @@ class CoolSlider extends FlxSpriteGroup {
 			if (dir != 0) value = _value + dir * step;
 		}
 
-		// Thumb hover highlight
-		if (_thumb != null) _thumb.alpha = (_hovered || _dragging) ? 1.0 : 0.85;
+		_thumb.alpha = (_dragging) ? 1.0 : (_hovered ? 0.92 : 0.82);
 	}
 
-	inline function _clamp01(v:Float):Float return Math.max(0.0, Math.min(1.0, v));
+	// ── Helpers ────────────────────────────────────────────────────────────
+	function _clamp(v:Float):Float {
+		if (v < minValue) return minValue;
+		if (v > maxValue) return maxValue;
+		return v;
+	}
+
+	function _clamp01(v:Float):Float return Math.max(0.0, Math.min(1.0, v));
+
+	function _formatValue(v:Float):String {
+		if (decimals <= 0) return Std.string(Std.int(v));
+		var factor = Math.pow(10, decimals);
+		return Std.string(Math.round(v * factor) / factor);
+	}
 
 	override public function destroy():Void {
 		onChange = null;
