@@ -63,8 +63,9 @@ class CoolTabMenu extends FlxSpriteGroup {
 		return id;
 	}
 
-	// ── Constructer ──────────────────────────────────────────────────────────
+	// ── Constructor ──────────────────────────────────────────────────────────
 
+	// FIX: typo "Constructer" → "Constructor"
 	public function new(?back_:FlxSprite, tabs:Array<{name:String, label:String}>, wrap:Bool = true) {
 		super();
 		_tabDefs = tabs ?? [];
@@ -87,9 +88,17 @@ class CoolTabMenu extends FlxSpriteGroup {
 	 */
 	public function addGroup(group:FlxSpriteGroup):Void {
 		var gName:String = "";
-		try {
-			gName = (Reflect.field(group, "name") : String) ?? "";
-		} catch (_:Dynamic) {}
+
+		// FIX: Use a type-safe downcast to CoolUIGroup first, then fall back
+		// to Reflect for groups that happen to have a `name` field.
+		var coolGroup = Std.downcast(group, CoolUIGroup);
+		if (coolGroup != null) {
+			gName = coolGroup.name;
+		} else {
+			try {
+				gName = (Reflect.field(group, "name") : String) ?? "";
+			} catch (_:Dynamic) {}
+		}
 
 		if (gName == "") {
 			var idx = Lambda.count(_groups);
@@ -101,9 +110,7 @@ class CoolTabMenu extends FlxSpriteGroup {
 
 		_groups.set(gName, group);
 
-		// ── LOCAL COORDINATES ──────────────────────────────────────────────
-		// The group is a child of this FlxSpriteGroup, so x/y are
-		// RELATIVE to the parent origin, not world coordinates.
+		// Group coordinates are RELATIVE to this FlxSpriteGroup's origin.
 		group.x = 0;
 		group.y = TAB_BAR_H + 1;
 
@@ -124,9 +131,6 @@ class CoolTabMenu extends FlxSpriteGroup {
 
 	// ── Chrome ───────────────────────────────────────────────────────────────
 
-	/**
-	 * Initial build — groups don't exist yet, chrome only.
-	 */
 	function _buildChrome():Void {
 		var T = coolui.CoolUITheme.current;
 		var pw = (_pw > 0) ? _pw : 300;
@@ -135,21 +139,21 @@ class CoolTabMenu extends FlxSpriteGroup {
 		// Tab bar
 		_tabBarBg = new FlxSprite(0, 0);
 		_tabBarBg.makeGraphic(pw, TAB_BAR_H, T.bgPanelAlt);
-		_tabBarBg.scrollFactor.set();
+		_tabBarBg.scrollFactor.set(0, 0);
 		add(_tabBarBg);
 
 		// Accent line
 		_tabBarLine = new FlxSprite(0, TAB_BAR_H);
 		_tabBarLine.makeGraphic(pw, 1, T.accent);
 		_tabBarLine.alpha = 0.4;
-		_tabBarLine.scrollFactor.set();
+		_tabBarLine.scrollFactor.set(0, 0);
 		add(_tabBarLine);
 
 		// Body
 		var bodyH = ph - TAB_BAR_H - 1;
 		_bodyBg = new FlxSprite(0, TAB_BAR_H + 1);
 		_bodyBg.makeGraphic(pw, (bodyH > 0) ? bodyH : 1, T.bgPanel);
-		_bodyBg.scrollFactor.set();
+		_bodyBg.scrollFactor.set(0, 0);
 		add(_bodyBg);
 
 		// Tab buttons
@@ -157,21 +161,21 @@ class CoolTabMenu extends FlxSpriteGroup {
 		_updateHighlights();
 	}
 
-	/**
-	 * Rebuild after resize/refresh — recreates chrome but PRESERVES groups
-	 * (removes them, destroys chrome, re-inserts them).
-	 */
 	function _rebuildChrome():Void {
-		// ── Save group references before clearing members ────────
+		// Save group references and insertion order before clearing members
 		var savedGroups:Array<{id:String, g:FlxSpriteGroup}> = [];
 		for (id => g in _groups)
 			savedGroups.push({id: id, g: g});
+		// Sort by member index to preserve original z-order when re-adding
+		savedGroups.sort((a, b) -> members.indexOf(a.g) - members.indexOf(b.g));
 
-		// ── Clear old chrome (do NOT destroy groups) ─────────────────
+		// Cancel any running tween
 		if (_fadeTween != null) {
 			_fadeTween.cancel();
 			_fadeTween = null;
 		}
+
+		// Destroy old chrome buttons
 		for (b in _tabBtns) {
 			remove(b, true);
 			b.destroy();
@@ -190,14 +194,14 @@ class CoolTabMenu extends FlxSpriteGroup {
 		_kill(_tabBarBg);
 		_tabBarBg = null;
 
-		// Also remove groups to reorder z-order
+		// Remove groups temporarily (to reorder z-order correctly)
 		for (sg in savedGroups)
 			remove(sg.g, true);
 
-		// ── Rebuild chrome ───────────────────────────────────────────────
+		// Rebuild chrome
 		_buildChrome();
 
-		// ── Re-add groups on top of the chrome ─────────────────────────
+		// Re-add groups on top of the new chrome, in original order
 		for (sg in savedGroups) {
 			sg.g.x = 0;
 			sg.g.y = TAB_BAR_H + 1;
@@ -222,7 +226,7 @@ class CoolTabMenu extends FlxSpriteGroup {
 		for (i in 0...n) {
 			var bw = (i == n - 1) ? last : btnW;
 			var btn = new _TabBtn(btnW * i, 0, bw, TAB_BAR_H, _tabDefs[i].label, _tabDefs[i].name, T);
-			btn.scrollFactor.set();
+			btn.scrollFactor.set(0, 0);
 			btn.onClick = function(name:String) {
 				selected_tab_id = name;
 			};
@@ -304,7 +308,7 @@ private class _TabBtn extends FlxSpriteGroup {
 		_label.alignment = CENTER;
 		_label.color = FlxColor.fromInt(T.textSecondary);
 		_label.alpha = 0.75;
-		_label.scrollFactor.set();
+		_label.scrollFactor.set(0, 0);
 		_label.y = Std.int((bh - _label.height) * 0.5) - 1;
 		add(_label);
 	}

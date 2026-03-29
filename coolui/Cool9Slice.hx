@@ -33,12 +33,12 @@ class Cool9Slice extends FlxSprite {
 	var _th:Int;
 
 	/**
-	 * @param px        X
-	 * @param py        Y
+	 * @param px            X
+	 * @param py            Y
 	 * @param bitmapOrPath  BitmapData or asset path (String)
-	 * @param slice     9-slice cut rectangle
-	 * @param w         Target width
-	 * @param h         Target height
+	 * @param slice         9-slice cut rectangle
+	 * @param w             Target width
+	 * @param h             Target height
 	 */
 	public function new(px:Float = 0, py:Float = 0, bitmapOrPath:Dynamic, ?slice:Rectangle, w:Int = 100, h:Int = 100) {
 		super(px, py);
@@ -60,7 +60,8 @@ class Cool9Slice extends FlxSprite {
 		_th = (h > 0) ? h : 100;
 
 		// Default slice: 1/3 of source size per corner
-		_slice = slice ?? new Rectangle(Std.int(_srcBmp.width / 3), Std.int(_srcBmp.height / 3), Std.int(_srcBmp.width / 3), Std.int(_srcBmp.height / 3));
+		_slice = slice ?? new Rectangle(Std.int(_srcBmp.width / 3), Std.int(_srcBmp.height / 3), Std.int(_srcBmp.width / 3),
+			Std.int(_srcBmp.height / 3));
 
 		_render();
 	}
@@ -120,10 +121,17 @@ class Cool9Slice extends FlxSprite {
 		pixels = dst;
 	}
 
-	static inline function _blit(dst:BitmapData, src:BitmapData, sx:Int, sy:Int, sw:Int, sh:Int, dx:Int, dy:Int, scaleX:Float, scaleY:Float):Void {
+	/**
+	 * BUG FIX: The original code was missing `m.translate(-sx, -sy)`, which caused all
+	 * non-top-left regions to sample from the wrong part of the source bitmap.
+	 * The matrix must first bring the source region to the origin before scaling/translating.
+	 */
+	static inline function _blit(dst:BitmapData, src:BitmapData, sx:Int, sy:Int, sw:Int, sh:Int, dx:Int, dy:Int, scaleX:Float,
+			scaleY:Float):Void {
 		if (sw <= 0 || sh <= 0)
 			return;
 		var m = new Matrix();
+		m.translate(-sx, -sy); // bring source region to origin
 		m.scale(scaleX, scaleY);
 		m.translate(dx, dy);
 		dst.draw(src, m, null, null, new Rectangle(dx, dy, sw * scaleX, sh * scaleY), false);
