@@ -114,7 +114,9 @@ class CoolTabMenu extends FlxSpriteGroup {
 		group.x = 0;
 		group.y = TAB_BAR_H + 1;
 
-		group.visible = (gName == _selectedId);
+		var show = (gName == _selectedId);
+		group.visible = show;
+		group.active  = show; // FIX: inactive tab groups must not process input
 		add(group);
 	}
 
@@ -125,8 +127,11 @@ class CoolTabMenu extends FlxSpriteGroup {
 	// ── Group visibility ────────────────────────────────────────────────
 
 	function _syncGroupVisibility():Void {
-		for (id => group in _groups)
-			group.visible = (id == _selectedId);
+		for (id => group in _groups) {
+			var show = (id == _selectedId);
+			group.visible = show;
+			group.active  = show; // FIX: prevent hidden tabs from receiving update() / mouse events
+		}
 	}
 
 	// ── Chrome ───────────────────────────────────────────────────────────────
@@ -205,7 +210,9 @@ class CoolTabMenu extends FlxSpriteGroup {
 		for (sg in savedGroups) {
 			sg.g.x = 0;
 			sg.g.y = TAB_BAR_H + 1;
-			sg.g.visible = (sg.id == _selectedId);
+			var show = (sg.id == _selectedId);
+			sg.g.visible = show;
+			sg.g.active  = show; // FIX: inactive tab groups must not process input
 			add(sg.g);
 		}
 	}
