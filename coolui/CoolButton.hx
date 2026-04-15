@@ -99,7 +99,7 @@ class CoolButton extends FlxSpriteGroup {
 	function set_label(v:String):String {
 		if (_label != null) {
 			_label.text = v;
-			_label.y    = Std.int((_bh - _label.height) * 0.5);
+			_label.y    = Std.int((_bh - _label.size) * 0.5);
 		}
 		return v;
 	}
@@ -117,7 +117,7 @@ class CoolButton extends FlxSpriteGroup {
 			case "right": RIGHT;
 			default:      CENTER;
 		};
-		_label.y = Std.int((_bh - _label.height) * 0.5);
+		_label.y = Std.int((_bh - _label.size) * 0.5);
 	}
 
 	public function resize(w:Float, h:Float):Void {
@@ -154,7 +154,7 @@ class CoolButton extends FlxSpriteGroup {
 		_label = new FlxText(2, 0, _bw - 4, labelText, 8);
 		_label.alignment = CENTER;
 		_label.color     = FlxColor.fromInt(txtC);
-		_label.y         = Std.int((_bh - _label.height) * 0.5);
+		_label.y         = Std.int((_bh - _label.size) * 0.5);
 		_label.scrollFactor.set(0, 0);
 		add(_label);
 	}
@@ -176,8 +176,8 @@ class CoolButton extends FlxSpriteGroup {
 
 		for (py in 0...h) {
 			var t:Float  = (h > 1) ? py / (h - 1) : 0.0;
-			var lift:Int = Std.int((1.0 - t) * 28);
-			var drop:Int = Std.int(t * 14);
+			var lift:Int = Std.int((1.0 - t) * 12);
+			var drop:Int = Std.int(t * 8);
 			var rowC     = FlxColor.fromRGB(
 				Std.int(Math.max(0, Math.min(255, bgC.red   + lift - drop))),
 				Std.int(Math.max(0, Math.min(255, bgC.green + lift - drop))),
