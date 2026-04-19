@@ -346,6 +346,27 @@ class CoolButton extends FlxSpriteGroup {
 		}
 	}
 
+	/**
+	 * Override FlxSpriteGroup.set_alpha so that _hoverOverlay is NOT touched.
+	 *
+	 * BUG: When callers fade a button in with FlxTween.tween(btn, {alpha:1}, …),
+	 * the default FlxSpriteGroup.set_alpha propagates the value to every child,
+	 * including _hoverOverlay.  That overlay is supposed to sit at alpha=0 normally
+	 * (it peaks at 0.09 on hover, 0.20 on press — both managed by internal tweens).
+	 * Propagating alpha=1 to it produces a full-opacity, accent-coloured rectangle
+	 * that covers the whole button permanently.
+	 *
+	 * Fix: only propagate to _bg and _label.  The _hoverOverlay keeps its own
+	 * internally managed alpha untouched.
+	 */
+	override function set_alpha(value:Float):Float {
+		if (_bg    != null) _bg.alpha    = value;
+		if (_label != null) _label.alpha = value;
+		// _hoverOverlay intentionally excluded — its alpha is controlled solely by
+		// the hover/press tweens in update() and must never be overwritten here.
+		return alpha = value;
+	}
+
 	override public function destroy():Void {
 		_cancelTweens();
 		CoolUITheme.removeListener(_themeListener);
