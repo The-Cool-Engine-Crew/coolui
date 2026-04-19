@@ -182,9 +182,12 @@ class CoolButton extends FlxSpriteGroup {
 		_hoverOverlay = new FlxSprite(x, y);
 		_hoverOverlay.makeGraphic(_bw, _bh, FlxColor.TRANSPARENT);
 		_hoverOverlay.scrollFactor.set(0, 0);
-		_hoverOverlay.alpha = 0;
 		_drawOverlayMask(_hoverOverlay, FlxColor.fromInt(T.accent));
 		add(_hoverOverlay);
+		// FIX: alpha must be set AFTER add() — FlxSpriteGroup.add() propagates the
+		// group's current alpha (1.0) to new members, overwriting any value set before.
+		// Setting it here guarantees the overlay starts invisible regardless of group state.
+		_hoverOverlay.alpha = 0;
 
 		_label = new FlxText(x + 2, y, _bw - 4, "", 8);
 		_label.alignment = CENTER;
@@ -362,8 +365,11 @@ class CoolButton extends FlxSpriteGroup {
 	override function set_alpha(value:Float):Float {
 		if (_bg    != null) _bg.alpha    = value;
 		if (_label != null) _label.alpha = value;
-		// _hoverOverlay intentionally excluded — its alpha is controlled solely by
-		// the hover/press tweens in update() and must never be overwritten here.
+		// _hoverOverlay is always kept at 0 when alpha is set externally (e.g. fade tweens).
+		// Its visible alpha is controlled exclusively by the hover/press tweens in update().
+		// Resetting here ensures that even if add() or a resize() already propagated the
+		// group alpha to the overlay, this call will clean it up on the next set.
+		if (_hoverOverlay != null) _hoverOverlay.alpha = 0;
 		return alpha = value;
 	}
 
