@@ -167,34 +167,47 @@ class CoolButton extends FlxSpriteGroup {
 		var brdC = FlxColor.fromInt(_borderColor(T));
 		var txtC = _textColor(T);
 
-		// FIX: super(px, py) is called before _build(), so the group is already
-		// at (x, y) when members are added — FlxSpriteGroup only propagates the
-		// position *delta* to existing members. Members added afterwards keep
-		// whatever absolute position they are given, so we must initialise them
-		// at (x, y) rather than (0, 0).
+		// FIX (scrollFactor): FlxSpriteGroup.add() calls preAdd() which copies the
+		// GROUP's scrollFactor onto every new member — overriding any scrollFactor set
+		// on the sprite BEFORE add().  Setting it on the GROUP first guarantees that
+		// preAdd propagates (0, 0) to all members automatically, so the explicit per-
+		// member calls below become redundant-but-harmless safety nets.
+		// Without this, if the parent camera has any scroll (e.g. the FreeplayState
+		// parallax camera), member sprites rendered with scrollFactor (1,1) appear
+		// offset from their world positions while hitboxes (checked in world space) stay
+		// correct — exactly the "visual wrong / hitbox right" symptom.
+		scrollFactor.set(0, 0);
+
+		// FIX (position): super(px, py) is called before _build(), so the group is
+		// already at (x, y) when members are added — FlxSpriteGroup only propagates the
+		// position *delta* to existing members. Members added afterwards keep whatever
+		// absolute position they are given, so we must initialise them at (x, y) rather
+		// than (0, 0).
 		_bg = new FlxSprite(x, y);
 		_bg.makeGraphic(_bw, _bh, FlxColor.TRANSPARENT);
-		_bg.scrollFactor.set(0, 0);
 		_bg.alpha = 0.82;
 		_drawButton(_bg, bgC, brdC);
 		add(_bg);
+		// scrollFactor set after add() so preAdd() does not override it.
+		_bg.scrollFactor.set(0, 0);
 
 		_hoverOverlay = new FlxSprite(x, y);
 		_hoverOverlay.makeGraphic(_bw, _bh, FlxColor.TRANSPARENT);
-		_hoverOverlay.scrollFactor.set(0, 0);
 		_drawOverlayMask(_hoverOverlay, FlxColor.fromInt(T.accent));
 		add(_hoverOverlay);
-		// FIX: alpha must be set AFTER add() — FlxSpriteGroup.add() propagates the
-		// group's current alpha (1.0) to new members, overwriting any value set before.
-		// Setting it here guarantees the overlay starts invisible regardless of group state.
+		// FIX (alpha): alpha must be set AFTER add() — FlxSpriteGroup.add() propagates
+		// the group's current alpha (1.0) to new members, overwriting any value set
+		// before.  Setting it here guarantees the overlay starts invisible regardless of
+		// group state.
 		_hoverOverlay.alpha = 0;
+		_hoverOverlay.scrollFactor.set(0, 0);
 
 		_label = new FlxText(x + 2, y, _bw - 4, "", 8);
 		_label.alignment = CENTER;
 		_label.color = FlxColor.fromInt(txtC);
 		_label.y = y + Std.int((_bh - _label.size) * 0.5);
-		_label.scrollFactor.set(0, 0);
 		add(_label);
+		_label.scrollFactor.set(0, 0);
 		_label.text = labelText;
 	}
 
