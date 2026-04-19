@@ -15,6 +15,7 @@ import openfl.text.Font;
 import openfl.text.TextField;
 import openfl.text.TextFieldType;
 import openfl.text.TextFormat;
+import openfl.geom.Point;
 
 @:font("assets/vcr.ttf")
 private class _VCRFont extends Font {}
@@ -126,11 +127,14 @@ class CoolInputText extends FlxSpriteGroup {
 		_field.addEventListener(KeyboardEvent.KEY_DOWN, _onKeyDown);
 
 		// ── Flixel visual representation (always visible, z-order correct) ─
-		_bgSprite = new FlxSprite(0, 0);
+		// FIX: same FlxSpriteGroup position bug as CoolButton — super(px, py)
+		// runs before _bgSprite / _displayText are added, so no delta is
+		// propagated. Initialise members at the group's current absolute (x, y).
+		_bgSprite = new FlxSprite(x, y);
 		_rebuildBg();
 		add(_bgSprite);
 
-		_displayText = new FlxText(2, Std.int((_h - _fontSize) * 0.5), _w - 4, text, _fontSize);
+		_displayText = new FlxText(x + 2, y + Std.int((_h - _fontSize) * 0.5), _w - 4, text, _fontSize);
 		_displayText.color = FlxColor.fromInt(_textColor);
 		add(_displayText);
 	}
@@ -206,7 +210,7 @@ class CoolInputText extends FlxSpriteGroup {
 		if (_bgSprite != null) _rebuildBg();
 		if (_displayText != null) {
 			_displayText.fieldWidth = _w - 4;
-			_displayText.y = Std.int((_h - _fontSize) * 0.5);
+			_displayText.y = y + Std.int((_h - _fontSize) * 0.5);
 		}
 	}
 
@@ -229,15 +233,18 @@ class CoolInputText extends FlxSpriteGroup {
 
 	// ── Native TextField mount/unmount ────────────────────────────────────────
 	/**
-	 * Adds the native TextField to FlxG.game, syncs its screen position,
-	 * and gives it keyboard focus. Called only when the user clicks the field
-	 * or sets hasFocus = true programmatically.
+	 * Adds the native TextField to FlxG.stage (NOT FlxG.game), syncs its
+	 * screen position, and gives it keyboard focus.
+	 *
+	 * FIX: Adding to FlxG.game could prevent keyboard-focus routing on some
+	 * targets (HashLink, HTML5) because FlxGame's internal display objects may
+	 * intercept events. Stage is always the correct root for native overlays.
 	 */
 	function _mountAndFocus():Void {
 		if (_field == null || FlxG.game == null || FlxG.stage == null) return;
 		if (!_onStage) {
 			_syncFieldPosition();
-			FlxG.game.addChild(_field);
+			FlxG.stage.addChild(_field);
 			_onStage = true;
 		}
 		FlxG.stage.focus = _field;
@@ -254,8 +261,13 @@ class CoolInputText extends FlxSpriteGroup {
 		if (_field == null) return;
 		var sp = FlxPoint.get();
 		getScreenPosition(sp, camera);
-		_field.x      = sp.x;
-		_field.y      = sp.y;
+		// FIX: getScreenPosition returns coordinates in the game's viewport
+		// space. The TextField is a child of FlxG.stage, which is in actual
+		// display-pixel (stage) space. localToGlobal converts correctly even
+		// when the game has a scale or letterbox offset applied.
+		var pt = FlxG.game.localToGlobal(new Point(sp.x, sp.y));
+		_field.x      = pt.x;
+		_field.y      = pt.y;
 		_field.width  = _w;
 		_field.height = _h;
 		sp.put();

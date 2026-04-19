@@ -124,7 +124,7 @@ class CoolButton extends FlxSpriteGroup {
 	function set_label(v:String):String {
 		if (_label != null) {
 			_label.text = v;
-			_label.y = Std.int((_bh - _label.size) * 0.5);
+			_label.y = y + Std.int((_bh - _label.size) * 0.5);
 		}
 		return v;
 	}
@@ -144,7 +144,7 @@ class CoolButton extends FlxSpriteGroup {
 			case "right": RIGHT;
 			default: CENTER;
 		};
-		_label.y = Std.int((_bh - _label.size) * 0.5);
+		_label.y = y + Std.int((_bh - _label.size) * 0.5);
 	}
 
 	public function resize(w:Float, h:Float):Void {
@@ -167,24 +167,29 @@ class CoolButton extends FlxSpriteGroup {
 		var brdC = FlxColor.fromInt(_borderColor(T));
 		var txtC = _textColor(T);
 
-		_bg = new FlxSprite(0, 0);
+		// FIX: super(px, py) is called before _build(), so the group is already
+		// at (x, y) when members are added — FlxSpriteGroup only propagates the
+		// position *delta* to existing members. Members added afterwards keep
+		// whatever absolute position they are given, so we must initialise them
+		// at (x, y) rather than (0, 0).
+		_bg = new FlxSprite(x, y);
 		_bg.makeGraphic(_bw, _bh, FlxColor.TRANSPARENT);
 		_bg.scrollFactor.set(0, 0);
 		_bg.alpha = 0.82;
 		_drawButton(_bg, bgC, brdC);
 		add(_bg);
 
-		_hoverOverlay = new FlxSprite(0, 0);
+		_hoverOverlay = new FlxSprite(x, y);
 		_hoverOverlay.makeGraphic(_bw, _bh, FlxColor.TRANSPARENT);
 		_hoverOverlay.scrollFactor.set(0, 0);
 		_hoverOverlay.alpha = 0;
 		_drawOverlayMask(_hoverOverlay, FlxColor.fromInt(T.accent));
 		add(_hoverOverlay);
 
-		_label = new FlxText(2, 0, _bw - 4, "", 8);
+		_label = new FlxText(x + 2, y, _bw - 4, "", 8);
 		_label.alignment = CENTER;
 		_label.color = FlxColor.fromInt(txtC);
-		_label.y = Std.int((_bh - _label.size) * 0.5);
+		_label.y = y + Std.int((_bh - _label.size) * 0.5);
 		_label.scrollFactor.set(0, 0);
 		add(_label);
 		_label.text = labelText;

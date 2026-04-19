@@ -340,7 +340,16 @@ private class _TabBtn extends FlxSpriteGroup {
 
 	override public function update(elapsed:Float):Void {
 		super.update(elapsed);
-		var hover = (FlxG.mouse.x >= x && FlxG.mouse.x <= x + _bw && FlxG.mouse.y >= y && FlxG.mouse.y <= y + _bh);
+
+		// FIX: FlxG.mouse.x/y return world coordinates for the DEFAULT camera.
+		// If this tab menu is on a different camera (e.g. camHUD), those world
+		// coords don't align with the tab's position. Use getWorldPosition() for
+		// the camera actually assigned to this widget.
+		var cam = (cameras != null && cameras.length > 0) ? cameras[0] : FlxG.camera;
+		var mp = FlxG.mouse.getWorldPosition(cam);
+		var hover = (mp.x >= x && mp.x <= x + _bw && mp.y >= y && mp.y <= y + _bh);
+		mp.put();
+
 		if (hover != _isHover) {
 			_isHover = hover;
 			if (!_isActive)
