@@ -127,16 +127,25 @@ class CoolInputText extends FlxSpriteGroup {
 		_field.addEventListener(KeyboardEvent.KEY_DOWN, _onKeyDown);
 
 		// ── Flixel visual representation (always visible, z-order correct) ─
-		// FIX: same FlxSpriteGroup position bug as CoolButton — super(px, py)
-		// runs before _bgSprite / _displayText are added, so no delta is
-		// propagated. Initialise members at the group's current absolute (x, y).
-		_bgSprite = new FlxSprite(x, y);
+		// IMPORTANT: Children must be initialised at (0, 0), NOT at (x, y).
+		// FlxSpriteGroup.onAdd() in Flixel 5.x automatically offsets every newly
+		// added child by the group's current (x, y). Initialising at (x, y) causes
+		// a double-offset → children end up at (2*x, 2*y), creating a visible
+		// "phantom" duplicate rendered far below/right of where the field should be.
+		_bgSprite = new FlxSprite(0, 0);
 		_rebuildBg();
 		add(_bgSprite);
 
-		_displayText = new FlxText(x + 2, y + Std.int((_h - _fontSize) * 0.5), _w - 4, text, _fontSize);
+		_displayText = new FlxText(2, Std.int((_h - _fontSize) * 0.5), _w - 4, text, _fontSize);
 		_displayText.color = FlxColor.fromInt(_textColor);
 		add(_displayText);
+
+		// This is a UI overlay widget — it must not scroll with the game camera.
+		// Setting scrollFactor here also propagates to _bgSprite and _displayText
+		// via FlxSpriteGroup's set_scrollFactor override, so the native TextField
+		// position (computed in _syncFieldPosition via getScreenPosition) will
+		// match the visual position even when the game camera is scrolled/zoomed.
+		scrollFactor.set(0, 0);
 	}
 
 	// ── Getters / Setters ─────────────────────────────────────────────────────

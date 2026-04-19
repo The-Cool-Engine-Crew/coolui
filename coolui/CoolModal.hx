@@ -156,6 +156,15 @@ class CoolModal extends FlxSpriteGroup {
 
 	/** Add a sprite / group to the modal content area. */
 	public function addContent(obj:flixel.FlxBasic):Void {
+		// Propagate the content area's scrollFactor (0,0) to the new member.
+		// _content.scrollFactor was set before any content was added, so Flixel's
+		// forEach propagation didn't reach this object yet. We do it manually here
+		// so that native overlays (e.g. CoolInputText._field) can compute the
+		// correct screen position even when the game camera is scrolled.
+		if (Std.isOfType(obj, FlxSprite)) {
+			var s:FlxSprite = cast obj;
+			s.scrollFactor.set(0, 0);
+		}
 		_content.add(obj);
 	}
 
