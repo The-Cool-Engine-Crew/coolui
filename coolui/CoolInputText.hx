@@ -139,13 +139,6 @@ class CoolInputText extends FlxSpriteGroup {
 		_displayText = new FlxText(2, Std.int((_h - _fontSize) * 0.5), _w - 4, text, _fontSize);
 		_displayText.color = FlxColor.fromInt(_textColor);
 		add(_displayText);
-
-		// This is a UI overlay widget — it must not scroll with the game camera.
-		// Setting scrollFactor here also propagates to _bgSprite and _displayText
-		// via FlxSpriteGroup's set_scrollFactor override, so the native TextField
-		// position (computed in _syncFieldPosition via getScreenPosition) will
-		// match the visual position even when the game camera is scrolled/zoomed.
-		scrollFactor.set(0, 0);
 	}
 
 	// ── Getters / Setters ─────────────────────────────────────────────────────
@@ -267,13 +260,15 @@ class CoolInputText extends FlxSpriteGroup {
 
 	/** Syncs the native TextField's screen position to match our Flixel position. */
 	function _syncFieldPosition():Void {
-		if (_field == null) return;
+		if (_field == null || _bgSprite == null) return;
 		var sp = FlxPoint.get();
-		getScreenPosition(sp, camera);
-		// FIX: getScreenPosition returns coordinates in the game's viewport
-		// space. The TextField is a child of FlxG.stage, which is in actual
-		// display-pixel (stage) space. localToGlobal converts correctly even
-		// when the game has a scale or letterbox offset applied.
+		// KEY FIX: use _bgSprite.getScreenPosition() rather than the group's
+		// getScreenPosition(). The bgSprite is the exact Flixel visual the native
+		// TextField must overlay, so its screen coords are always the ground truth —
+		// regardless of whatever scrollFactor, camera zoom, or parent-group nesting
+		// the caller has set up.  Using the group's own position (old code) could
+		// drift when the group's scrollFactor differed from its children's.
+		_bgSprite.getScreenPosition(sp, _bgSprite.camera);
 		var pt = FlxG.game.localToGlobal(new Point(sp.x, sp.y));
 		_field.x      = pt.x;
 		_field.y      = pt.y;
@@ -365,7 +360,12 @@ class CoolInputText extends FlxSpriteGroup {
 		// Detect clicks inside the field area → mount native TextField and focus.
 		if (FlxG.mouse.justPressed && visible && alive && exists) {
 			var sp = FlxPoint.get();
-			getScreenPosition(sp, camera);
+			// KEY FIX: same ground-truth as _syncFieldPosition — use the bgSprite's
+			// actual screen position so click detection matches what the user sees,
+			// not the group's position (which can differ when scrollFactor or camera
+			// zoom causes a mismatch between group and child screen coords).
+			if (_bgSprite != null) _bgSprite.getScreenPosition(sp, _bgSprite.camera);
+			else getScreenPosition(sp, camera);
 			var mx      = FlxG.mouse.screenX;
 			var my      = FlxG.mouse.screenY;
 			var inField = mx >= sp.x && mx <= sp.x + _w && my >= sp.y && my <= sp.y + _h;
