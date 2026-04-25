@@ -216,6 +216,17 @@ class CoolInputText extends FlxSpriteGroup {
 		}
 	}
 
+	// ── Selection helper ──────────────────────────────────────────────────
+	/**
+	 * Selects all text in the native TextField.
+	 * Called by CoolNumericStepper after opening the inline editor so the
+	 * user can immediately type a new value without manually clearing the old one.
+	 */
+	public function selectAll():Void {
+		if (_field != null)
+			_field.setSelection(0, _field.text.length);
+	}
+
 	// ── Background sprite builder ─────────────────────────────────────────────
 	function _rebuildBg():Void {
 		_bgSprite.makeGraphic(_w, _h, FlxColor.TRANSPARENT);

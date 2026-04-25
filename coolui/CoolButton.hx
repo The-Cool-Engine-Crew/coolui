@@ -207,10 +207,12 @@ class CoolButton extends FlxSpriteGroup {
 		var brdC = FlxColor.fromInt(_borderColor(T));
 		var txtC = _textColor(T);
 
-		// Children are placed at the group's current world position (x, y).
-		// FlxSpriteGroup propagates position deltas to all members, so any
-		// subsequent move keeps everything aligned correctly.
-		_bg = new FlxSprite(x, y);
+		// IMPORTANT: Children MUST be created at (0, 0), NOT at (x, y).
+		// FlxSpriteGroup.add() in Flixel 5.x calls preAdd() which offsets every
+		// newly added child by the group's current (x, y). Initialising at (x, y)
+		// causes a double-offset → children end up at (2x, 2y), so the visual
+		// appears far from where the hit-test fires ("click lands on nothing").
+		_bg = new FlxSprite(0, 0);
 		_bg.makeGraphic(_bw, _bh, FlxColor.TRANSPARENT);
 		_bg.alpha = 0.82;
 		_drawButton(_bg, bgC, brdC);
@@ -218,7 +220,7 @@ class CoolButton extends FlxSpriteGroup {
 		// scrollFactor must be set AFTER add() so preAdd() does not override it.
 		_bg.scrollFactor.set(0, 0);
 
-		_hoverOverlay = new FlxSprite(x, y);
+		_hoverOverlay = new FlxSprite(0, 0);
 		_hoverOverlay.makeGraphic(_bw, _bh, FlxColor.TRANSPARENT);
 		_drawOverlayMask(_hoverOverlay, FlxColor.fromInt(T.accent));
 		add(_hoverOverlay);
@@ -228,7 +230,7 @@ class CoolButton extends FlxSpriteGroup {
 		_hoverOverlay.alpha = 0;
 		_hoverOverlay.scrollFactor.set(0, 0);
 
-		_label = new FlxText(x + 2, y, _bw - 4, labelText, 8);
+		_label = new FlxText(2, 0, _bw - 4, labelText, 8);
 		_label.alignment = CENTER;
 		_label.color = FlxColor.fromInt(txtC);
 		add(_label);

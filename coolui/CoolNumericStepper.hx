@@ -231,10 +231,9 @@ class CoolNumericStepper extends FlxSpriteGroup {
 
 		// FIX: Auto-select all text so the user can immediately type a new
 		// value without having to manually clear the old one first.
-		// Requires CoolInputText to expose `textField:openfl.text.TextField`
-		// (standard for FlxInputText-based wrappers).
-		if (_editField.textField != null)
-			_editField.textField.setSelection(0, _editField.text.length);
+		// selectAll() is a public method on CoolInputText that forwards to
+		// the internal TextField — no need to expose _field directly.
+		_editField.selectAll();
 	}
 
 	function _endEdit(confirm:Bool):Void {
