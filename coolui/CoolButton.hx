@@ -167,22 +167,6 @@ class CoolButton extends FlxSpriteGroup {
 		var brdC = FlxColor.fromInt(_borderColor(T));
 		var txtC = _textColor(T);
 
-		// FIX (scrollFactor): FlxSpriteGroup.add() calls preAdd() which copies the
-		// GROUP's scrollFactor onto every new member — overriding any scrollFactor set
-		// on the sprite BEFORE add().  Setting it on the GROUP first guarantees that
-		// preAdd propagates (0, 0) to all members automatically, so the explicit per-
-		// member calls below become redundant-but-harmless safety nets.
-		// Without this, if the parent camera has any scroll (e.g. the FreeplayState
-		// parallax camera), member sprites rendered with scrollFactor (1,1) appear
-		// offset from their world positions while hitboxes (checked in world space) stay
-		// correct — exactly the "visual wrong / hitbox right" symptom.
-		scrollFactor.set(0, 0);
-
-		// FIX (position): super(px, py) is called before _build(), so the group is
-		// already at (x, y) when members are added — FlxSpriteGroup only propagates the
-		// position *delta* to existing members. Members added afterwards keep whatever
-		// absolute position they are given, so we must initialise them at (x, y) rather
-		// than (0, 0).
 		_bg = new FlxSprite(x, y);
 		_bg.makeGraphic(_bw, _bh, FlxColor.TRANSPARENT);
 		_bg.alpha = 0.82;
