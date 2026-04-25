@@ -34,9 +34,15 @@ import flixel.util.FlxColor;
  *     any move / resize / font change.
  *   - set_alpha override correctly skips _hoverOverlay (prevents the
  *     accent overlay from becoming permanently visible during fade tweens).
- *   - _pressed state cleared on any mouse release, not only on release-
- *     inside-button, preventing a stuck "pressed" state if the cursor
- *     leaves the button while the mouse button is held.
+ *   - onClick / onUp fire on any mouse *release* after a press-inside, not
+ *     only when the cursor is still inside at release time. The old
+ *     `_pressed && inBtn` guard caused silent click failures whenever the
+ *     mouse drifted even one pixel outside the hit area between press and
+ *     release — common on small buttons (default 80×20). Standard UI
+ *     convention (HTML, desktop, FlxButton) requires only that the press
+ *     originated inside; the release position does not matter.
+ *     justReleased remains scoped to "released while hovering" for callers
+ *     that need that narrower signal.
  *
  * NEW:
  *   - onDown   — fires when the mouse button is pressed over the button.
@@ -423,12 +429,21 @@ class CoolButton extends FlxSpriteGroup {
 		}
 
 		// ── Release (mouse up) ────────────────────────────────────────────
-		// FIX: clear _pressed on ANY release, not only on release-inside-
-		// button. This prevents a stuck "pressed" state when the user drags
-		// out of the button before releasing.
+		// FIX: fire onClick whenever the mouse is released after having been
+		// pressed inside this button — regardless of where the release happens.
+		// The old check `_pressed && inBtn` required the cursor to still be
+		// inside the button at the moment of release, which caused silent
+		// failures when the mouse moved even one pixel out of the hit area
+		// between press and release (common on small buttons like the default
+		// 80×20).  Standard UI convention (HTML, desktop, FlxButton) is:
+		// "press inside → drag anywhere → release → click fires".
+		//
+		// justReleased stays scoped to "released while hovering" so external
+		// code polling that flag gets the more useful "cursor is still here"
+		// signal, while onClick/onUp fire unconditionally on any release.
 		if (FlxG.mouse.justReleased) {
-			if (_pressed && inBtn) {
-				justReleased = true;
+			if (_pressed) {
+				if (inBtn) justReleased = true;
 				if (onClick != null)
 					onClick(); // primary callback (release semantics)
 				if (onUp != null)
