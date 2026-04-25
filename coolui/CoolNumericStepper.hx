@@ -22,6 +22,15 @@ import openfl.desktop.ClipboardFormats;
  *   - Hit-test uses FlxG.mouse.screenX/Y (screen-space) instead of
  *     getWorldPosition() so the widget works on HUD cameras (scrollFactor=0)
  *     regardless of world-camera scroll.
+ *   - scrollFactor(0,0) is now set on the GROUP (both CoolNumericStepper and
+ *     the private _StepBtn) in their constructors, BEFORE any children are
+ *     added. Flixel 5.x FlxSpriteGroup.preAdd() copies the group's
+ *     scrollFactor to every child at add() time. The old code set it on
+ *     individual children BEFORE add(), which meant preAdd() overwrote the
+ *     value with the group's default (1,1). Setting it on the group first
+ *     means preAdd propagates (0,0) correctly to all direct children, and
+ *     _StepBtn setting its own scrollFactor before adding its children
+ *     ensures grandchildren also inherit (0,0).
  *
  * WHEEL BEHAVIOUR:
  *   Plain scroll           → ± stepSize
@@ -64,6 +73,11 @@ class CoolNumericStepper extends FlxSpriteGroup {
 
 	public function new(px:Float = 0, py:Float = 0, stepSize:Float = 1, value:Float = 0, min:Float = 0, max:Float = 100, decimals:Int = 0, width:Int = 80) {
 		super(px, py);
+
+		// FIX: Set scrollFactor on the GROUP before _build() adds any children.
+		// See class-level doc for a full explanation of why this is needed.
+		scrollFactor.set(0, 0);
+
 		this.stepSize = stepSize;
 		this.minValue = min;
 		this.maxValue = max;
@@ -94,22 +108,28 @@ class CoolNumericStepper extends FlxSpriteGroup {
 		_bg = new FlxSprite(BTN_W, 0);
 		_bg.makeGraphic(labelW, HEIGHT, T.bgPanelAlt);
 		add(_bg);
+		// scrollFactor already (0,0) via preAdd from group. Explicit set kept
+		// for clarity but is now redundant.
+		_bg.scrollFactor.set(0, 0);
 
 		_btnDn = new _StepBtn(0, 0, BTN_W, HEIGHT, "-", T);
-		_btnDn.scrollFactor.set(0, 0);
 		_btnDn.onClick = function() step(-1);
 		add(_btnDn);
+		// scrollFactor propagated to _btnDn by preAdd (group is 0,0).
+		// _StepBtn also sets (0,0) on itself before adding its own children,
+		// so grandchildren are covered too.
+		_btnDn.scrollFactor.set(0, 0);
 
 		_btnUp = new _StepBtn(_w - BTN_W, 0, BTN_W, HEIGHT, "+", T);
-		_btnUp.scrollFactor.set(0, 0);
 		_btnUp.onClick = function() step(1);
 		add(_btnUp);
+		_btnUp.scrollFactor.set(0, 0);
 
 		_label = new FlxText(BTN_W + 2, 1, labelW - 4, _formatValue(_value), 10);
 		_label.alignment = CENTER;
 		_label.color = FlxColor.fromInt(T.textPrimary);
-		_label.scrollFactor.set(0, 0);
 		add(_label);
+		_label.scrollFactor.set(0, 0);
 	}
 
 	/**
@@ -274,6 +294,16 @@ private class _StepBtn extends FlxSpriteGroup {
 
 	public function new(bx:Float, by:Float, bw:Int, bh:Int, arrow:String, T:CoolTheme) {
 		super(bx, by);
+
+		// FIX: Set scrollFactor on this group BEFORE adding children so that
+		// preAdd() propagates (0,0) to _bg and _label automatically.
+		// Without this, _bg and _label would inherit the group's default (1,1)
+		// and render at the wrong position when the camera is scrolled, even
+		// though the parent CoolNumericStepper correctly sets (0,0) on _StepBtn
+		// after adding it. preAdd only touches the direct child — it does NOT
+		// recurse into grandchildren.
+		scrollFactor.set(0, 0);
+
 		_bw = bw;
 		_bh = bh;
 
@@ -284,8 +314,11 @@ private class _StepBtn extends FlxSpriteGroup {
 		_label = new FlxText(0, 0, bw, arrow, 11);
 		_label.alignment = CENTER;
 		_label.color = FlxColor.fromInt(T.accent);
-		_label.y = Std.int((bh - _label.height) * 0.5);
 		add(_label);
+		// Centre vertically after add() so _label.y is already offset by
+		// this group's y; adding the height-based offset on top gives the
+		// correct absolute world position.
+		_label.y += Std.int((bh - _label.height) * 0.5);
 	}
 
 	override public function update(elapsed:Float):Void {

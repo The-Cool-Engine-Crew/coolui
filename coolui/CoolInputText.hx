@@ -7,6 +7,8 @@ import flixel.group.FlxSpriteGroup;
 import flixel.math.FlxPoint;
 import flixel.util.FlxColor;
 import flixel.util.FlxDestroyUtil;
+import openfl.desktop.Clipboard;
+import openfl.desktop.ClipboardFormats;
 import openfl.events.Event;
 import openfl.events.FocusEvent;
 import openfl.events.KeyboardEvent;
@@ -33,8 +35,19 @@ private class _VCRFont extends Font {}
  * camera the parent state/group assigns, and screen-position syncing for the
  * native overlay uses that same camera.
  *
- * CLIPBOARD: Ctrl+C / Ctrl+X / Ctrl+V / Ctrl+A are handled natively by
- * OpenFL's INPUT TextField — no extra code needed.
+ * SCROLL-FACTOR FIX: scrollFactor(0,0) is set on the GROUP in the constructor
+ * before any children are added. Flixel 5.x FlxSpriteGroup.preAdd() copies the
+ * group's scrollFactor to every child at add() time, so children inherit (0,0)
+ * automatically. Keeping the group at the default (1,1) caused hit-testing to
+ * fail whenever the camera was scrolled, because the hit-test compared world
+ * position against mouse screen-space coordinates.
+ *
+ * CLIPBOARD: Ctrl+C / Ctrl+X / Ctrl+V / Ctrl+A are now handled explicitly in
+ * _onKeyDown as well as natively by the OpenFL INPUT TextField. The explicit
+ * handlers are the primary path on HTML5, where the native INPUT TextField
+ * does not process clipboard shortcuts on its own. On desktop targets both
+ * paths would fire; stopImmediatePropagation() is called on the cut and paste
+ * cases to suppress the native handler and prevent double application.
  *
  * Compatible constructors:
  *   new CoolInputText(x, y, width, text, fontSize)
@@ -97,6 +110,11 @@ class CoolInputText extends FlxSpriteGroup {
 	public function new(px:Float = 0, py:Float = 0, width:Int = 150, text:String = "",
 	                    fontSize:Int = 8, ?textColor:Int, ?bgColor:Int) {
 		super(px, py);
+
+		// FIX: Set scrollFactor on the GROUP before adding any children.
+		// See class-level doc for a full explanation of why this is needed.
+		scrollFactor.set(0, 0);
+
 		_w         = (width    > 0) ? width    : 150;
 		_fontSize  = (fontSize > 0) ? fontSize : 8;
 		_h         = _fontSize + 8;
@@ -212,11 +230,9 @@ class CoolInputText extends FlxSpriteGroup {
 		if (_bgSprite != null) _rebuildBg();
 		if (_displayText != null) {
 			_displayText.fieldWidth = _w - 4;
-			_displayText.y = y + Std.int((_h - _fontSize) * 0.5);
 		}
 	}
 
-	// ── Selection helper ──────────────────────────────────────────────────
 	/**
 	 * Selects all text in the native TextField.
 	 * Called by CoolNumericStepper after opening the inline editor so the
@@ -333,9 +349,78 @@ class CoolInputText extends FlxSpriteGroup {
 			case Keyboard.ENTER | Keyboard.NUMPAD_ENTER:
 				if (callback != null) callback(_field.text, "enter");
 				if (onEnterPressed != null) onEnterPressed();
+
 			case Keyboard.ESCAPE:
 				if (callback != null) callback(_field.text, "escape");
 				if (onEscapePressed != null) onEscapePressed();
+
+			// ── Clipboard shortcuts ─────────────────────────────────────────
+			//
+			// Handled explicitly so that they work on all targets (HTML5 in
+			// particular does not process Ctrl/Cmd shortcuts through the
+			// native INPUT TextField on its own).
+			//
+			// stopImmediatePropagation() is called for cut and paste to
+			// prevent the native TextField from ALSO applying the operation
+			// on targets where it would do so (desktop cpp / HashLink), which
+			// would result in a double-paste / double-cut.
+
+			// Ctrl+A / Cmd+A — select all
+			case Keyboard.A if (e.ctrlKey || e.commandKey):
+				_field.setSelection(0, _field.text.length);
+
+			// Ctrl+C / Cmd+C — copy selection to clipboard (read-only, idempotent)
+			case Keyboard.C if (e.ctrlKey || e.commandKey):
+				var from = _field.selectionBeginIndex;
+				var to   = _field.selectionEndIndex;
+				if (from < to) {
+					var sel = _field.text.substring(from, to);
+					try {
+						Clipboard.generalClipboard.setData(ClipboardFormats.TEXT_FORMAT, sel);
+					} catch (_) {}
+				}
+
+			// Ctrl+X / Cmd+X — cut selection to clipboard
+			case Keyboard.X if (e.ctrlKey || e.commandKey):
+				// Stop native handler first to prevent double-cut on desktop.
+				e.stopImmediatePropagation();
+				var from = _field.selectionBeginIndex;
+				var to   = _field.selectionEndIndex;
+				if (from < to) {
+					var sel = _field.text.substring(from, to);
+					try {
+						Clipboard.generalClipboard.setData(ClipboardFormats.TEXT_FORMAT, sel);
+					} catch (_) {}
+					var newText = _field.text.substring(0, from) + _field.text.substring(to);
+					_field.text = newText;
+					_field.setSelection(from, from);
+					if (_displayText != null) _displayText.text = _passwordMask(newText);
+					if (callback != null) callback(newText, "change");
+				}
+
+			// Ctrl+V / Cmd+V — paste from clipboard
+			case Keyboard.V if (e.ctrlKey || e.commandKey):
+				// Stop native handler first to prevent double-paste on desktop.
+				e.stopImmediatePropagation();
+				try {
+					var clip:String = cast Clipboard.generalClipboard.getData(ClipboardFormats.TEXT_FORMAT);
+					if (clip != null && clip.length > 0) {
+						var from    = _field.selectionBeginIndex;
+						var to      = _field.selectionEndIndex;
+						var newText = _field.text.substring(0, from) + clip + _field.text.substring(to);
+						var filtered = _applyFilter(newText);
+						// Respect maxChars if set.
+						var maxC = _field.maxChars;
+						if (maxC > 0 && filtered.length > maxC)
+							filtered = filtered.substr(0, maxC);
+						_field.text = filtered;
+						var newPos = Std.int(Math.min(from + clip.length, filtered.length));
+						_field.setSelection(newPos, newPos);
+						if (_displayText != null) _displayText.text = _passwordMask(filtered);
+						if (callback != null) callback(filtered, "change");
+					}
+				} catch (_) {}
+
 			default:
 		}
 	}

@@ -24,6 +24,12 @@ import flixel.util.FlxColor;
  *   - Hit-test uses FlxG.mouse.screenX/Y instead of getWorldPosition() so
  *     HUD buttons (scrollFactor = 0) work correctly even when the camera
  *     is scrolled.
+ *   - scrollFactor(0,0) is set on the GROUP itself in the constructor,
+ *     BEFORE _build() adds any children. Flixel 5.x preAdd() copies the
+ *     group's scrollFactor to every newly added child, so children
+ *     automatically inherit (0,0). Setting it only on individual children
+ *     (or setting it before add()) was insufficient — preAdd() overwrites
+ *     whatever value the child had at add() time.
  *   - _centerLabel() uses the group's world y so label stays centred after
  *     any move / resize / font change.
  *   - set_alpha override correctly skips _hoverOverlay (prevents the
@@ -111,6 +117,25 @@ class CoolButton extends FlxSpriteGroup {
 	public function new(px:Float = 0, py:Float = 0, labelStr:String = "", ?onClick:Void->Void, width:Int = DEFAULT_W, height:Int = DEFAULT_H,
 			style:Int = STYLE_DEFAULT) {
 		super(px, py);
+
+		// FIX: Set scrollFactor on the GROUP before _build() adds any children.
+		//
+		// Flixel 5.x FlxSpriteGroup.preAdd() calls
+		//   sprite.scrollFactor.copyFrom(this.scrollFactor)
+		// for every member that is add()ed.  If we wait until after add() to
+		// set scrollFactor on the children (old approach), the children get
+		// the group's DEFAULT (1, 1) from preAdd, and our post-add set() is
+		// the only correction.  That worked for the children we set explicitly,
+		// but the group itself kept (1, 1), so the hit-test — which compares
+		// world x/y against mouse.screenX/Y — failed whenever the camera was
+		// scrolled (screenX ≠ worldX when scroll ≠ 0).
+		//
+		// Setting (0, 0) here means:
+		//   • The group renders at screen position (x, y) regardless of camera.
+		//   • preAdd propagates (0, 0) to every child automatically.
+		//   • The hit-test  mx >= x  is always correct.
+		scrollFactor.set(0, 0);
+
 		this.onClick = onClick;
 		_bw = (width > 0) ? width : DEFAULT_W;
 		_bh = (height > 0) ? height : DEFAULT_H;
@@ -217,7 +242,8 @@ class CoolButton extends FlxSpriteGroup {
 		_bg.alpha = 0.82;
 		_drawButton(_bg, bgC, brdC);
 		add(_bg);
-		// scrollFactor must be set AFTER add() so preAdd() does not override it.
+		// scrollFactor is already (0,0) via preAdd (group was set in constructor).
+		// The explicit set below is redundant but kept for clarity.
 		_bg.scrollFactor.set(0, 0);
 
 		_hoverOverlay = new FlxSprite(0, 0);
@@ -360,12 +386,12 @@ class CoolButton extends FlxSpriteGroup {
 
 		// FIX: Use screen-space coordinates for hit testing.
 		//
-		// Because scrollFactor = (0, 0), this button always renders at its
-		// world (x, y) on screen — no camera-scroll adjustment is needed.
-		// Using FlxG.mouse.getWorldPosition() would give incorrect results
-		// when the camera is scrolled, because that call adds camera.scroll
-		// to the raw screen position, which is NOT what we want for elements
-		// that ignore scroll.
+		// Because scrollFactor = (0, 0) on the group (set in constructor),
+		// this button always renders at its world (x, y) on screen — no
+		// camera-scroll adjustment is needed.  Using getWorldPosition()
+		// would give incorrect results when the camera is scrolled, because
+		// that call adds camera.scroll to the raw screen position, which is
+		// NOT what we want for elements that ignore scroll.
 		var mx = FlxG.mouse.screenX;
 		var my = FlxG.mouse.screenY;
 		var inBtn = mx >= x && mx <= x + _bw && my >= y && my <= y + _bh;
