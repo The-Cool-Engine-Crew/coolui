@@ -10,16 +10,16 @@ import flixel.tweens.FlxTween;
 import flixel.util.FlxColor;
 
 /**
- * FlxButton — Drop-in replacement for `FlxUIButton` / `FlxButtonPlus`.
+ * CoolButton — Drop-in replacement for `FlxUIButton` / `CoolButtonPlus`.
  *
- *   var btn = new FlxButton(x, y, "Click me", function() { trace("clicked"); });
+ *   var btn = new CoolButton(x, y, "Click me", function() { trace("clicked"); });
  *   btn.resize(100, 24);
  *   btn.btnWidth  = 120;   // also works
  *   btn.btnHeight = 28;    // also works
  *   btn.label     = "New text";
  *
  * FIXED:
- *   - onClick / onUp now fire on mouse *release* (like FlxButton), not on
+ *   - onClick / onUp now fire on mouse *release* (like CoolButton), not on
  *     press. The flash animation still triggers on press.
  *   - Hit-test uses FlxG.mouse.getWorldPosition(camera) so it works
  *     correctly even when camera zoom != 1 (e.g. bump animations).
@@ -39,14 +39,14 @@ import flixel.util.FlxColor;
  *     `_pressed && inBtn` guard caused silent click failures whenever the
  *     mouse drifted even one pixel outside the hit area between press and
  *     release — common on small buttons (default 80×20). Standard UI
- *     convention (HTML, desktop, FlxButton) requires only that the press
+ *     convention (HTML, desktop, CoolButton) requires only that the press
  *     originated inside; the release position does not matter.
  *     justReleased remains scoped to "released while hovering" for callers
  *     that need that narrower signal.
  *
  * NEW:
  *   - onDown   — fires when the mouse button is pressed over the button.
- *   - onUp     — alias for onClick (FlxButton naming convention).
+ *   - onUp     — alias for onClick (CoolButton naming convention).
  *   - onOver   — fires when the cursor enters the button area.
  *   - onOut    — fires when the cursor leaves the button area.
  *   - justPressed  — true for one frame on mouse-down over the button.
@@ -55,7 +55,7 @@ import flixel.util.FlxColor;
  *
  * Styles: STYLE_DEFAULT · STYLE_ACCENT · STYLE_DANGER · STYLE_GHOST
  */
-class FlxButton extends FlxSpriteGroup {
+class CoolButton extends FlxSpriteGroup {
 	public static inline var STYLE_DEFAULT:Int = 0;
 	public static inline var STYLE_ACCENT:Int = 1;
 	public static inline var STYLE_DANGER:Int = 2;
@@ -65,12 +65,12 @@ class FlxButton extends FlxSpriteGroup {
 	static inline var DEFAULT_H:Int = 20;
 	public static inline var CORNER_RADIUS:Int = 3;
 
-	// ── Callbacks (FlxButton-compatible) ──────────────────────────────────
+	// ── Callbacks (CoolButton-compatible) ──────────────────────────────────
 
-	/** Fires when the mouse is *released* while inside the button (= FlxButton.onUp). */
+	/** Fires when the mouse is *released* while inside the button (= CoolButton.onUp). */
 	public var onClick:Void->Void;
 
-	/** Alias for onClick — FlxButton naming convention. Shares the same handler. */
+	/** Alias for onClick — CoolButton naming convention. Shares the same handler. */
 	public var onUp:Void->Void;
 
 	/** Fires when the mouse button is pressed down over this button. */
@@ -202,7 +202,7 @@ class FlxButton extends FlxSpriteGroup {
 		_rebuild(lbl);
 	}
 
-	/** FlxButtonPlus / FlxUIButton compatibility. */
+	/** CoolButtonPlus / FlxUIButton compatibility. */
 	public function setLabelFormat(?font:String, size:Int = 8, color:Int = 0xFFFFFFFF, alignment:String = "center"):Void {
 		if (_label == null)
 			return;
@@ -433,7 +433,7 @@ class FlxButton extends FlxSpriteGroup {
 		// inside the button at the moment of release, which caused silent
 		// failures when the mouse moved even one pixel out of the hit area
 		// between press and release (common on small buttons like the default
-		// 80×20).  Standard UI convention (HTML, desktop, FlxButton) is:
+		// 80×20).  Standard UI convention (HTML, desktop, CoolButton) is:
 		// "press inside → drag anywhere → release → click fires".
 		//
 		// justReleased stays scoped to "released while hovering" so external
