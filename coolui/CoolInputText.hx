@@ -455,17 +455,15 @@ class CoolInputText extends FlxSpriteGroup {
 
 		// Detect clicks inside the field area → mount native TextField and focus.
 		if (FlxG.mouse.justPressed && visible && alive && exists) {
-			var sp = FlxPoint.get();
-			// KEY FIX: same ground-truth as _syncFieldPosition — use the bgSprite's
-			// actual screen position so click detection matches what the user sees,
-			// not the group's position (which can differ when scrollFactor or camera
-			// zoom causes a mismatch between group and child screen coords).
-			if (_bgSprite != null) _bgSprite.getScreenPosition(sp, _bgSprite.camera);
-			else getScreenPosition(sp, camera);
-			var mx      = FlxG.mouse.screenX;
-			var my      = FlxG.mouse.screenY;
-			var inField = mx >= sp.x && mx <= sp.x + _w && my >= sp.y && my <= sp.y + _h;
-			sp.put();
+			// FIX: Use getWorldPosition(camera) for hit testing so it works
+			// correctly when camera zoom != 1. Comparing world mouse pos against
+			// world x/y/_w/_h is consistent; the old screen-vs-screen approach
+			// was wrong because _w/_h are world units, not screen pixels.
+			var _mp = FlxG.mouse.getWorldPosition(camera);
+			var mx      = _mp.x;
+			var my      = _mp.y;
+			_mp.put();
+			var inField = mx >= x && mx <= x + _w && my >= y && my <= y + _h;
 
 			if (inField) {
 				_mountAndFocus();

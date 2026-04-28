@@ -10,9 +10,9 @@ import flixel.tweens.FlxTween;
 import flixel.util.FlxColor;
 
 /**
- * CoolButton — Drop-in replacement for `FlxUIButton` / `FlxButtonPlus`.
+ * FlxButton — Drop-in replacement for `FlxUIButton` / `FlxButtonPlus`.
  *
- *   var btn = new CoolButton(x, y, "Click me", function() { trace("clicked"); });
+ *   var btn = new FlxButton(x, y, "Click me", function() { trace("clicked"); });
  *   btn.resize(100, 24);
  *   btn.btnWidth  = 120;   // also works
  *   btn.btnHeight = 28;    // also works
@@ -21,8 +21,8 @@ import flixel.util.FlxColor;
  * FIXED:
  *   - onClick / onUp now fire on mouse *release* (like FlxButton), not on
  *     press. The flash animation still triggers on press.
- *   - Hit-test uses FlxG.mouse.screenX/Y instead of getWorldPosition() so
- *     HUD buttons (scrollFactor = 0) work correctly even when the camera
+ *   - Hit-test uses FlxG.mouse.getWorldPosition(camera) so it works
+ *     correctly even when camera zoom != 1 (e.g. bump animations).
  *     is scrolled.
  *   - scrollFactor(0,0) is set on the GROUP itself in the constructor,
  *     BEFORE _build() adds any children. Flixel 5.x preAdd() copies the
@@ -55,7 +55,7 @@ import flixel.util.FlxColor;
  *
  * Styles: STYLE_DEFAULT · STYLE_ACCENT · STYLE_DANGER · STYLE_GHOST
  */
-class CoolButton extends FlxSpriteGroup {
+class FlxButton extends FlxSpriteGroup {
 	public static inline var STYLE_DEFAULT:Int = 0;
 	public static inline var STYLE_ACCENT:Int = 1;
 	public static inline var STYLE_DANGER:Int = 2;
@@ -390,17 +390,15 @@ class CoolButton extends FlxSpriteGroup {
 		if (!_enabled)
 			return;
 
-		// FIX: Use screen-space coordinates for hit testing.
-		//
-		// Because scrollFactor = (0, 0) on the group (set in constructor),
-		// this button always renders at its world (x, y) on screen — no
-		// camera-scroll adjustment is needed.  Using getWorldPosition()
-		// would give incorrect results when the camera is scrolled, because
-		// that call adds camera.scroll to the raw screen position, which is
-		// NOT what we want for elements that ignore scroll.
-		var mx = FlxG.mouse.screenX;
-		var my = FlxG.mouse.screenY;
-		var inBtn = mx >= x && mx <= x + _bw && my >= y && my <= y + _bh;
+		// FIX: Use getWorldPosition(camera) for hit testing.
+		// screenX/Y breaks whenever the camera zoom != 1 (e.g. bump animations
+		// set zoom to 1.02), because the sprite renders at worldX * zoom + offset
+		// on screen, not at worldX. getWorldPosition() converts the raw screen
+		// position back to world coords so the comparison against x/y is correct
+		// regardless of zoom or camera position.
+		var _mp = FlxG.mouse.getWorldPosition(camera);
+		var inBtn = _mp.x >= x && _mp.x <= x + _bw && _mp.y >= y && _mp.y <= y + _bh;
+		_mp.put();
 
 		// ── Hover enter / leave ────────────────────────────────────────────
 		if (inBtn != _hover) {

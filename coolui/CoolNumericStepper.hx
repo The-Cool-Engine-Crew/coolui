@@ -200,12 +200,11 @@ class CoolNumericStepper extends FlxSpriteGroup {
 	override public function update(elapsed:Float):Void {
 		super.update(elapsed);
 
-		// FIX: Use screen-space coordinates for hit testing.
-		// scrollFactor = (0,0) means the widget renders at its world (x, y)
-		// on screen regardless of camera scroll. Using getWorldPosition()
-		// would add camera.scroll and produce wrong results.
-		var mx = FlxG.mouse.screenX;
-		var my = FlxG.mouse.screenY;
+		// FIX: Use getWorldPosition(camera) for hit testing.
+		// screenX/Y breaks when camera zoom != 1 (world coords != screen coords).
+		var _mp = FlxG.mouse.getWorldPosition(camera);
+		var mx = _mp.x; var my = _mp.y;
+		_mp.put();
 		_hover = mx >= x && mx <= x + _w && my >= y && my <= y + HEIGHT;
 
 		// ── Double-click to open inline editor ────────────────────────────
@@ -324,10 +323,10 @@ private class _StepBtn extends FlxSpriteGroup {
 	override public function update(elapsed:Float):Void {
 		super.update(elapsed);
 
-		// FIX: Screen-space hit test (scrollFactor = 0 on HUD).
-		var mx = FlxG.mouse.screenX;
-		var my = FlxG.mouse.screenY;
-		var hover = mx >= x && mx <= x + _bw && my >= y && my <= y + _bh;
+		// FIX: Use getWorldPosition(camera) — screenX/Y breaks when zoom != 1.
+		var _mp = FlxG.mouse.getWorldPosition(camera);
+		var hover = _mp.x >= x && _mp.x <= x + _bw && _mp.y >= y && _mp.y <= y + _bh;
+		_mp.put();
 
 		_bg.alpha = hover ? 1.0 : 0.8;
 

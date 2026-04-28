@@ -84,12 +84,17 @@ class CoolTooltip extends FlxSpriteGroup {
 	override public function update(elapsed:Float):Void {
 		super.update(elapsed);
 		if (!_showing || !visible) return;
-		var nx = FlxG.mouse.screenX + OFFSET_X;
-		var ny = FlxG.mouse.screenY + OFFSET_Y;
+		// FIX: Use getWorldPosition(camera) so the tooltip tracks the cursor
+		// correctly when camera zoom != 1. Setting x/y to screenX/Y treated
+		// screen pixels as world units, which breaks at any zoom != 1.
+		var _mp = FlxG.mouse.getWorldPosition(camera);
+		var nx = _mp.x + OFFSET_X;
+		var ny = _mp.y + OFFSET_Y;
 		if (_bg != null) {
-			if (nx + _bg.frameWidth  > FlxG.width)  nx = FlxG.mouse.screenX - _bg.frameWidth  - OFFSET_X;
-			if (ny + _bg.frameHeight > FlxG.height) ny = FlxG.mouse.screenY - _bg.frameHeight - OFFSET_Y;
+			if (nx + _bg.frameWidth  > FlxG.width)  nx = _mp.x - _bg.frameWidth  - OFFSET_X;
+			if (ny + _bg.frameHeight > FlxG.height) ny = _mp.y - _bg.frameHeight - OFFSET_Y;
 		}
+		_mp.put();
 		x = nx; y = ny;
 	}
 
